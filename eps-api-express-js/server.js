@@ -1,0 +1,189 @@
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const http = require('http');
+const socketIo = require('socket.io');
+const { Sequelize } = require('sequelize');
+const path = require('path');
+const app = express();
+const server = http.createServer(app);
+
+// `origin: '*'` + `credentials: true` together is an invalid/dangerous combination — most
+// browsers reject sending credentials to a wildcard origin, and where one doesn't, it defeats the
+// point of CORS entirely. Set CORS_ORIGINS (comma-separated) to the real frontend origin(s) —
+// e.g. "https://feedback.sanfernandocity.gov.ph,http://localhost:9000" — to get a real allowlist
+// with credentials support. Left unset, OR explicitly set to "*", this falls back to the wide-open
+// `*`, but WITHOUT `credentials: true` (this app authenticates via a Bearer token/API key header
+// it attaches itself, not cookies, so credentialed CORS was never actually needed).
+//
+// The literal string "*" has to be special-cased here — the `cors` package only treats a bare
+// string `'*'` as "allow everything"; an ARRAY containing just `'*'` (which is what
+// `"*".split(',')` produces) instead makes it check whether the request's real Origin
+// string-equals "*", which no browser's Origin header ever does, so every single origin — kiosk,
+// external, internal, all of them — got rejected. That's the bug that broke the kiosk's CORS just
+// now: someone set CORS_ORIGINS=* expecting the old wildcard behavior back.
+const corsOriginsList = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',').map(o => o.trim()).filter(Boolean)
+  : null;
+const corsOrigins = corsOriginsList && !corsOriginsList.includes('*') ? corsOriginsList : null;
+if (!corsOrigins) {
+  console.warn('CORS_ORIGINS is not set (or is "*") — falling back to origin "*" (no credentials). Set CORS_ORIGINS to a comma-separated allowlist in .env for real per-origin CORS.');
+}
+
+const io = socketIo(server, {
+  pingInterval: 25000,
+  pingTimeout: 5000,
+    cors: corsOrigins
+      ? { origin: corsOrigins, methods: ['GET', 'POST'], allowedHeaders: ['Content-Type'], credentials: true }
+      : { origin: '*', methods: ['GET', 'POST'], allowedHeaders: ['Content-Type'] }
+});
+
+// Middleware
+// crossOriginResourcePolicy defaults to 'same-origin', which would block the internal/external
+// Quasar apps (a different origin, by design — see the CORS setup above) from loading anything
+// this server serves directly: avatar images under /uploads, generated PDFs, etc. Everything
+// else helmet sets by default (X-Content-Type-Options, frameguard, HSTS, etc.) is safe as-is for
+// a pure JSON/asset API with no HTML pages of its own.
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  crossOriginEmbedderPolicy: false,
+}));
+app.use(cors(corsOrigins
+  ? { origin: corsOrigins, methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'], credentials: true }
+  : { origin: '*', methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'] }
+));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// Initialize Sequelize
+const sequelize = new Sequelize(process.env.DB_NAME, process.env.DB_USER, process.env.DB_PASS, {
+  host: process.env.DB_HOST,
+  dialect: process.env.DB_DIALECT
+});
+
+sequelize.authenticate()
+  .then(() => {
+    console.log('✅ Database connected successfully');
+  })
+  .catch(err => {
+    console.error('❌ Database connection error:', err);
+  })
+  .finally(() => {
+    console.log('🔄 Sequelize authentication attempt completed');
+  });
+
+// Routes
+const AuthRoutes = require('./routes/AuthRoutes');
+const AuthController = require('./controllers/AuthController');
+const Auth = AuthController(io);
+app.use('/api', AuthRoutes(Auth));
+
+const UserRoutes = require('./routes/UserRoutes');
+const UserController = require('./controllers/UserController');
+const User = UserController(io);
+app.use('/api/preference/user', UserRoutes(User));
+app.use('/api/preference/office', require('./routes/OfficeRoutes'));
+app.use('/api/preference/complainttype', require('./routes/ComplaintTypeRoutes'));
+app.use('/api/preference/holiday', require('./routes/HolidayRoutes'));
+app.use('/api/feedback', require('./routes/FeedbackRoutes'))
+app.use('/api/nav-badges', require('./routes/NavBadgeRoutes'))
+app.use('/api/notification', require('./routes/NotificationRoutes'))
+app.use('/api/device-token', require('./routes/DeviceTokenRoutes'))
+
+app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
+
+const ComplaintRoutes = require('./routes/ComplaintRoutes');
+const ComplaintController = require('./controllers/ComplaintController');
+const Complaint = ComplaintController(io);
+app.use('/api/complaint', ComplaintRoutes(Complaint));
+
+const CitizenRoutes = require('./routes/CitizenRoutes');
+app.use('/api/citizen', CitizenRoutes(Complaint));
+
+const ResponseRoutes = require('./routes/ResponseRoutes');
+const ResponseController = require('./controllers/ResponseController');
+const ComplaintResponse = ResponseController(io);
+app.use('/api/response', ResponseRoutes(ComplaintResponse));
+
+app.use('/api/report', require('./routes/ReportRoutes'));
+
+const KioskRatingRoutes = require('./routes/KioskRatingRoutes');
+const KioskRatingController = require('./controllers/KioskRatingController');
+const KioskRating = KioskRatingController(io);
+app.use('/api/rating', KioskRatingRoutes(KioskRating));
+
+const DiscussionRoutes = require('./routes/DiscussionRoutes');
+const DiscussionController = require('./controllers/DiscussionController');
+const DiscussionCtrl = DiscussionController(io);
+app.use('/api/discussion', DiscussionRoutes(DiscussionCtrl));
+
+const PollRoutes = require('./routes/PollRoutes');
+const PollController = require('./controllers/PollController');
+const PollCtrl = PollController(io);
+app.use('/api/poll', PollRoutes(PollCtrl));
+
+const TeamRoutes = require('./routes/TeamRoutes');
+const TeamController = require('./controllers/TeamController');
+const Team = TeamController(io);
+app.use('/api/team', TeamRoutes(Team));
+
+const MessageRoutes = require('./routes/MessageRoutes');
+const MessageController = require('./controllers/MessageController');
+const MessageCtrl = MessageController(io);
+app.use('/api/messages', MessageRoutes(MessageCtrl));
+
+require('./sockets')(io);
+
+// // Assuming your 'backend' folder is a direct sibling of 'frontend' within 'my-app/'
+// // and this server.js/app.js is directly within 'backend/' or 'backend/dist/'
+// const frontendBuildPath = path.join(__dirname, '..', '..', 'feedback-internal-quasar', 'dist', 'spa'); // Adjust as necessary
+
+// // If 'app.js' is inside 'backend/dist/', then it's two levels up:
+// // const frontendBuildPath = path.join(__dirname, '..', '..', 'frontend', 'build');
+
+// console.log(`Serving frontend static files from: ${frontendBuildPath}`);
+// app.use(express.static(frontendBuildPath));
+
+// // --- Handle Frontend Client-Side Routing (e.g., React Router) ---
+// // For any unhandled requests, serve the main index.html file
+// // This allows client-side routing to take over for paths like /about, /dashboard, etc.
+// app.get('*', (req, res) => {
+//   res.sendFile(path.join(frontendBuildPath, 'index.html'));
+// });
+// const feedbackPath = path.join(__dirname, '..', '..', 'feedback-internal-quasar', 'dist', 'spa');
+// app.use(express.static(feedbackPath));
+
+// const kioskPath = path.join(__dirname, '..', '..', 'feedback-kiosk-quasar', 'dist', 'spa');
+// app.use(express.static(kioskPath));
+
+// app.use((req, res, next) => {
+//   const host = req.hostname;
+//   if (host.includes('kiosk')) {
+//     res.sendFile(path.join(kioskPath, 'index.html'));
+//   } else {
+//     res.sendFile(path.join(feedbackPath, 'index.html'));
+//     }
+// });
+// Main frontend
+// const feedbackPath = path.join(__dirname, "..", "..", "eps-www-quasar-internal", "dist", "spa");
+// const kioskPath = path.join(__dirname, "..", "..", "eps-kiosk-quasar", "dist", "spa");
+
+// // 🚀 Serve static assets FIRST
+// app.use("/", express.static(feedbackPath));
+// app.use("/kiosk", express.static(kioskPath));
+
+// // 🚀 History fallback for kiosk
+// app.get("/kiosk/*", (req, res) => {
+//   res.sendFile(path.join(kioskPath, "index.html"));
+// });
+
+// // 🚀 History fallback for main app
+// app.get("/*", (req, res) => {
+//   res.sendFile(path.join(feedbackPath, "index.html"));
+// });
+
+// Start server
+server.listen(process.env.PORT, () => {
+  console.log(`Server is running on http://localhost:${process.env.PORT}`);
+});

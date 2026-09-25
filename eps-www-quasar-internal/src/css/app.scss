@@ -1,0 +1,208 @@
+// app global css in SCSS form
+// app global css in SCSS form
+@font-face {
+    font-family: Poppins;
+    src: url(./Font/Poppins.ttf);
+}
+* {
+    font-family: 'Poppins';
+    letter-spacing: .3mm;
+}
+
+::-webkit-scrollbar {
+    display: none;
+}
+
+body {
+    margin: 0;
+    background-color: #FFFFFF;
+}
+
+.custom-border
+{
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.radius-xs
+{
+    border-radius: 10px;
+}
+
+.radius-sm
+{
+    border-radius: 15px;
+}
+
+.radius-md
+{
+    border-radius: 20px;
+}
+
+.radius-lg
+{
+    border-radius: 25px;
+}
+
+.radius-xl
+{
+    border-radius: 30px;
+}
+
+.btn
+{
+    width: 125px;
+}
+
+.status-icon {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background: white;
+    border-radius: 50%;
+    font-size: 18px;
+}
+
+// .dialog-feedback .q-dialog__inner,
+// .dialog-office .q-dialog__inner
+// {
+//     padding: 0px !important;
+// }
+
+// .dialog-feedback .card-dialog,
+// .dialog-office .card-dialog
+// {
+//     width: 650px;
+//     max-width: 100vw;
+// }
+
+.dialog-office .card-dialog .q-field__bottom {
+    padding: 3px 0px !important;
+}
+
+//Nav bar
+.header .tabs .tab {
+    text-decoration: none;
+    background: transparent;
+    display: inline-block;
+    padding: 0.3rem 1rem;
+    border-radius: 0px;
+    color: #333; /* Replace with your $dark color */
+    margin: 0 2px;
+    position: relative;
+    font-size: 0.80em;
+    transition: background-color 500ms;
+}
+  
+.header .tabs .tab:hover {
+    background-color: #F5F5F5;
+}
+  
+.header .tabs .tab.active {
+    background: #004EA8; /* Replace with your $primary color */
+    color: #F6F9FC;      /* Replace with your $accent color */
+    z-index: 1;
+    pointer-events: none;
+}
+
+.header .tabs .tab.active::after {
+    content: "";
+    position: absolute;
+    background-image: radial-gradient(
+        circle at top right,
+        transparent,
+        transparent 10px,
+        #004EA8 10px,
+        #004EA8 50px
+    );
+}
+
+.header .tabs .tab.active::before {
+    content: "";
+    position: absolute;
+    background-image: radial-gradient(
+        circle at top left,
+        transparent,
+        transparent 10px,
+        #004EA8 10px,
+        #004EA8 50px
+    );
+}
+
+//input
+.q-field--outlined .q-field__control:after,
+.q-field--outlined.q-field--highlighted .q-field__control:after
+{
+  border-width: 1px !important;
+}
+
+.card {
+    height: 250px;
+    width: 225px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    box-shadow: rgba(0, 0, 0, 0.05) 0px 0px 0px 1px;
+    transform: translateY(0) scale(1);
+    transition: transform 220ms cubic-bezier(.2,.8,.2,1), 
+                box-shadow 220ms ease;
+    will-change: transform, box-shadow;
+}
+.card-hover-animate {
+    transition: border-color 0.3s ease, transform 0.2s ease;
+}
+
+.card-hover-animate:hover {
+  transform: scale(1.02); /* optional zoom effect */
+}
+
+.q-field__bottom
+{
+    display: none !important;
+}
+.q-field
+{
+    padding: 0 !important;
+}
+
+.swal2-container
+{
+    z-index: 99999;
+}
+
+.message-modal .q-dialog__inner, .notification-modal .q-dialog__inner
+{
+    padding: 0px;
+}
+
+// Whole-page cross-fade on every route change (App.vue's <router-view> transition) — the old
+// page fully fades out before the new one fades in (mode="out-in"), so a logout redirect (or any
+// navigation) is a smooth cut instead of an instant, jarring swap.
+.page-fade-enter-active,
+.page-fade-leave-active {
+    transition: opacity 0.18s ease;
+}
+.page-fade-enter-from,
+.page-fade-leave-to {
+    opacity: 0;
+}
+// ---- SweetAlert2 confirmation dialogs — match the app's button language ----
+// SweetAlert2 renders into document.body (outside the Vue app), so this has to be global, not
+// scoped. Overriding the CSS custom properties on .swal2-popup (a nearer ancestor of the buttons
+// than :root, where SweetAlert defines them) wins regardless of stylesheet load order.
+.swal2-popup {
+    --swal2-border-radius: 16px;
+
+    // Affirmative action — the app's primary blue, pill-rounded.
+    --swal2-confirm-button-background-color: #004EA8;
+    --swal2-confirm-button-border-radius: 100px;
+
+    // Cancel — neutral grey, same pill shape.
+    --swal2-cancel-button-background-color: #6B7280;
+    --swal2-cancel-button-border-radius: 100px;
+
+    --swal2-deny-button-border-radius: 100px;
+
+    // Focus ring tinted to the confirm colour instead of SweetAlert's default cornflower blue.
+    --swal2-outline: 0 0 0 3px rgba(0, 78, 168, 0.35);
+}

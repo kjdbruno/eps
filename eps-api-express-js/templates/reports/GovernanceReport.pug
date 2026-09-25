@@ -1,0 +1,134 @@
+html
+    head
+        title= title
+        style.
+            * {
+                font-family: Century Gothic, CenturyGothic, AppleGothic, sans-serif;
+                color: #262626;
+                box-sizing: border-box;
+            }
+            body {
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            .header {
+                text-align: center;
+                margin-bottom: 14px;
+            }
+            .header img {
+                width: 56px;
+                height: auto;
+            }
+            .eyebrow {
+                font-size: 0.72em;
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+                color: #8493AC;
+                margin-top: 6px;
+            }
+            .title {
+                font-size: 1.3em;
+                font-weight: bold;
+                text-transform: uppercase;
+                margin-top: 2px;
+            }
+            .meta {
+                font-size: 0.75em;
+                color: #4C5C79;
+                margin-top: 4px;
+            }
+            .kpi-row {
+                display: flex;
+                margin: 16px 0;
+                gap: 8px;
+            }
+            .kpi {
+                flex: 1;
+                border: 1px solid #DDDDDD;
+                border-radius: 6px;
+                padding: 8px;
+                text-align: center;
+            }
+            .kpi-value {
+                font-size: 1.1em;
+                font-weight: bold;
+            }
+            .kpi-label {
+                font-size: 0.62em;
+                text-transform: uppercase;
+                color: #8493AC;
+                margin-top: 2px;
+            }
+            .section-title {
+                font-size: 0.85em;
+                font-weight: bold;
+                text-transform: uppercase;
+                margin: 16px 0 6px;
+                border-bottom: 1px solid #DDDDDD;
+                padding-bottom: 4px;
+            }
+            table.data {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 0.85em;
+                margin-bottom: 10px;
+            }
+            table.data th, table.data td {
+                border: 1px solid #DDDDDD;
+                padding: 5px 6px;
+            }
+            table.data th {
+                background: #000000;
+                color: #FFFFFF;
+                text-transform: uppercase;
+                font-size: 1em;
+                text-align: left;
+            }
+            table.data tbody tr:nth-child(odd) {
+                background: #EEEEEE;
+            }
+            table.data tbody tr:nth-child(even) {
+                background: #FFFFFF;
+            }
+            table.data td.num, table.data th.num {
+                text-align: right;
+            }
+            .footer {
+                margin-top: 20px;
+                font-size: 0.65em;
+                color: #8493AC;
+                text-align: center;
+            }
+            .tone-good { color: #1C8A3B; font-weight: bold; }
+            .tone-warn { color: #9A6B00; font-weight: bold; }
+            .tone-bad { color: #C0392B; font-weight: bold; }
+    body
+        div.header
+            img(src= seal)
+            div.eyebrow data-driven governance
+            div.title= title
+            div.meta= meta
+
+        if kpis && kpis.length
+            div.kpi-row
+                each kpi in kpis
+                    div.kpi
+                        div.kpi-value= kpi.value
+                        div.kpi-label= kpi.label
+
+        each section in sections
+            div.section-title= section.title
+            if section.note
+                div(style="font-size: 0.7em; color: #4C5C79; margin-bottom: 6px;")= section.note
+            table.data
+                thead
+                    tr
+                        each col in section.columns
+                            th(class=col.num ? 'num' : '')= col.label
+                tbody
+                    each row in section.rows
+                        tr
+                            each cell, i in row
+                                td(class=[section.columns[i] && section.columns[i].num ? 'num' : '', cell.tone ? 'tone-' + cell.tone : ''])= cell.value
+
+        div.footer generated #{generatedAt} &middot; San Fernando City EPS

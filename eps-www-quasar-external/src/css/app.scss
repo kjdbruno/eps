@@ -1,0 +1,86 @@
+// app global css in SCSS form
+// Font swapped from Poppins to Inter — Mona Sans (the reference site's font) isn't available on
+// Google Fonts, and Inter is the closest widely-hosted match for that modern grotesque feel.
+@font-face {
+    font-family: Poppins;
+    src: url(./Font/Poppins.ttf);
+}
+* {
+    font-family: 'Poppins';
+    letter-spacing: .3mm;
+}
+
+::-webkit-scrollbar {
+    display: none;
+}
+
+// Design system copied from eps-www-quasar-internal (the app's actual, finished design system).
+.custom-border {
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.radius-xs {
+    border-radius: 10px;
+}
+.radius-sm {
+    border-radius: 15px;
+}
+.radius-md {
+    border-radius: 20px;
+}
+.radius-lg {
+    border-radius: 25px;
+}
+.radius-xl {
+    border-radius: 30px;
+}
+
+.status-icon {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background: white;
+    border-radius: 50%;
+    font-size: 18px;
+}
+
+.card-hover-animate {
+    transition: border-color 0.3s ease, transform 0.2s ease;
+}
+.card-hover-animate:hover {
+    transform: scale(1.02);
+}
+
+// Signature top accent — a thin strip running the logo's navy into its gold.
+.gradient-bar {
+    height: 4px;
+    width: 100%;
+    background: linear-gradient(to right, #204888, #FFC900);
+}
+
+//input
+.q-field--outlined .q-field__control:after,
+.q-field--outlined.q-field--highlighted .q-field__control:after
+{
+  border-width: 1px !important;
+}
+// ---- SweetAlert2 confirmation dialogs — match the app's button language ----
+// SweetAlert2 renders into document.body (outside the Vue app), so this has to be global, not
+// scoped. Overriding the CSS custom properties on .swal2-popup (a nearer ancestor of the buttons
+// than :root, where SweetAlert defines them) wins regardless of stylesheet load order.
+.swal2-popup {
+    --swal2-border-radius: 16px;
+
+    // Affirmative action — the app's primary blue, pill-rounded.
+    --swal2-confirm-button-background-color: #004EA8;
+    --swal2-confirm-button-border-radius: 100px;
+
+    // Cancel — neutral grey, same pill shape.
+    --swal2-cancel-button-background-color: #6B7280;
+    --swal2-cancel-button-border-radius: 100px;
+
+    --swal2-deny-button-border-radius: 100px;
+
+    // Focus ring tinted to the confirm colour instead of SweetAlert's default cornflower blue.
+    --swal2-outline: 0 0 0 3px rgba(0, 78, 168, 0.35);
+}

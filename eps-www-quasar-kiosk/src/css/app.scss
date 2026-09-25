@@ -1,0 +1,40 @@
+// app global css in SCSS form
+@font-face {
+    font-family: Poppins;
+    src: url(./Font/Poppins.ttf);
+}
+* {
+    font-family: 'Poppins';
+    letter-spacing: .3mm;
+}
+
+::-webkit-scrollbar {
+    display: none;
+}
+
+body {
+    margin: 0;
+    background-color: #FFFFFF;
+}
+
+// Same radius/border utility scale as eps-www-quasar-internal/external's app.scss — kept
+// consistent across the whole suite rather than reinventing kiosk-only class names.
+.custom-border {
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.radius-xs {
+    border-radius: 10px;
+}
+
+.radius-sm {
+    border-radius: 15px;
+}
+
+.radius-md {
+    border-radius: 20px;
+}
+
+.radius-lg {
+    border-radius: 25px;
+}

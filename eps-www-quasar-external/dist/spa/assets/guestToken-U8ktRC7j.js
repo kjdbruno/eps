@@ -1,0 +1,1 @@
+const e="epsGuestToken";function o(){try{let t=localStorage.getItem(e);return t||(t=crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random().toString(36).slice(2)}`,localStorage.setItem(e,t)),t}catch{return`${Date.now()}-${Math.random().toString(36).slice(2)}`}}export{o as g};

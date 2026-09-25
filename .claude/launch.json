@@ -1,0 +1,31 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "quasar-external",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "eps-www-quasar-external"],
+      "port": 9000
+    },
+    {
+      "name": "quasar-internal",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "eps-www-quasar-internal", "--", "--port", "9001"],
+      "port": 9001
+    },
+    {
+      "name": "flutter-web",
+      "runtimeExecutable": "C:\\src\\flutter\\bin\\flutter.bat",
+      "runtimeArgs": [
+        "run",
+        "-d",
+        "web-server",
+        "--web-port",
+        "8080",
+        "--dart-define=EPS_API_BASE_URL=http://localhost:1000"
+      ],
+      "cwd": "eps-mobile-flutter",
+      "port": 8080
+    }
+  ]
+}

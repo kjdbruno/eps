@@ -1,0 +1,4 @@
+{
+  "EPS_API_BASE_URL": "http://10.0.2.2:1000",
+  "EPS_API_KEY": "REPLACE_WITH_BACKEND_API_KEY"
+}
