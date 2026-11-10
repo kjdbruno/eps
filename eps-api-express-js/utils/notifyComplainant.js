@@ -1,13 +1,18 @@
 const { ComplaintDetail, Citizen, Notification } = require('../models');
 const { pushNotifications } = require('./notifySocket');
 const transporter = require('./mailer');
+const mailFrom = require('./mailFrom');
+const { renderNotification } = require('./renderNotification');
 
+// Sent as a branded HTML email (templates/notification.html); the plain text stays as the fallback
+// for mail apps that do not show HTML.
 const mailComplainant = (to, subject, content, tail) =>
     transporter.sendMail({
-        from: `"CSFLU - Complaint Hotline" <${process.env.MAIL_USER}>`,
+        from: mailFrom(),
         to,
         subject,
         text: `${content}\n\n${tail}`,
+        html: renderNotification({ subject, content, note: tail }),
     });
 
 // One place to reach whoever filed a complaint, regardless of whether they have an account.

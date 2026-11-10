@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
+<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0F1830"/><stop offset="1" stop-color="#2B3560"/></linearGradient></defs>
+<rect width="800" height="600" fill="url(#sky)"/>
+
+<rect y="300" width="800" height="300" fill="#2A2E36"/>
+<rect y="296" width="800" height="12" fill="#58606C"/>
+<g fill="#1D2027"><rect x="20" y="170" width="120" height="130"/><rect x="160" y="130" width="150" height="170"/><rect x="330" y="200" width="110" height="100"/><rect x="460" y="150" width="150" height="150"/><rect x="630" y="190" width="150" height="110"/></g>
+<g fill="#F2C94C"><rect x="50" y="200" width="14" height="18"/><rect x="90" y="230" width="14" height="18"/><rect x="190" y="170" width="14" height="18"/><rect x="260" y="220" width="14" height="18"/><rect x="480" y="190" width="14" height="18"/><rect x="540" y="240" width="14" height="18"/><rect x="660" y="230" width="14" height="18"/></g>
+<rect x="390" y="150" width="14" height="260" fill="#3A404B"/>
+<rect x="390" y="150" width="90" height="12" fill="#3A404B"/>
+<rect x="460" y="158" width="46" height="14" rx="6" fill="#20242B" stroke="#515A68" stroke-width="3"/>
+<circle cx="150" cy="70" r="26" fill="#EDEFF4" opacity=".9"/>
+<rect x="18" y="552" width="150" height="30" rx="8" fill="rgba(0,0,0,.45)"/>
+<text x="93" y="572" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#fff" text-anchor="middle">STREETLIGHT OUT</text>
+</svg>

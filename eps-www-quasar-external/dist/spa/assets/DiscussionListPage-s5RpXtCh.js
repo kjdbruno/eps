@@ -1,0 +1,1 @@
+import{A as e,h as t,l as n,z as r}from"./runtime-core.esm-bundler-DYtyFWwP.js";import{t as i}from"./AuthShell-DOrouCk8.js";import a from"./DiscussionList-CuW9J55E.js";var o={__name:`DiscussionListPage`,setup(o){return(o,s)=>(e(),n(i,null,{default:r(()=>[t(a)]),_:1}))}};export{o as default};

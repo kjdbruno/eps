@@ -1,6 +1,10 @@
 import 'package:intl/intl.dart';
 
 final _dateFmt = DateFormat('MMM dd, yyyy hh:mm a');
+final _shortFmt = DateFormat('MMM d, y');
+
+/// A short date for a small label ("Sep 9, 2026"), where the full date and time would not fit.
+String shortDate(DateTime? d) => d == null ? '' : _shortFmt.format(d);
 
 String formatDate(DateTime? d) => d == null ? '' : _dateFmt.format(d);
 

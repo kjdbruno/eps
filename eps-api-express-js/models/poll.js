@@ -13,6 +13,10 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'pollId',
         as: 'options',
       });
+      Poll.hasMany(models.PollQuestion, {
+        foreignKey: 'pollId',
+        as: 'questions',
+      });
       Poll.hasMany(models.PollVote, {
         foreignKey: 'pollId',
         as: 'votes',
@@ -33,6 +37,11 @@ module.exports = (sequelize, DataTypes) => {
     question: {
       type: DataTypes.STRING,
       allowNull: false
+    },
+    // What the survey is about, shown above its questions (the `question` column above is its title).
+    description: {
+      type: DataTypes.TEXT,
+      allowNull: true
     },
     createdBy: {
       type: DataTypes.INTEGER,

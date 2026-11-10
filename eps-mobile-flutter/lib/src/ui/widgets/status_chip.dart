@@ -8,20 +8,19 @@ class StatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = AppTheme.statusColor(status);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(6),
+        color: AppTheme.statusSoft(status),
+        borderRadius: BorderRadius.circular(99),
       ),
       child: Text(
         status.toUpperCase(),
         style: TextStyle(
-          color: color,
+          color: AppTheme.statusColor(status),
           fontSize: 11,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.4,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.6,
         ),
       ),
     );

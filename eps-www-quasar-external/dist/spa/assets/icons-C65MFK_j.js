@@ -1,0 +1,1 @@
+import{i as e,n as t,r as n}from"./index-DegiF-9-.js";var r=`bi-check-circle-fill`,i=`bi-check-circle`,a=()=>{for(let a of[n,e,t])a.props.checkedIcon={type:String,default:r},a.props.uncheckedIcon={type:String,default:i};n.props.indeterminateIcon={type:String,default:`bi-dash-circle-fill`},t.props.indeterminateIcon={type:String,default:`bi-dash-circle-fill`}};export{a as default};

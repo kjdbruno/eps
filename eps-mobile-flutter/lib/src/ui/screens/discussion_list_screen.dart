@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/discussion.dart';
 import '../../services/discussion_service.dart';
 import '../../theme/app_theme.dart';
+import '../widgets/detail_scaffold.dart';
 import '../widgets/eps_list_view.dart';
+import 'discussion_thread_screen.dart';
+import '../widgets/format.dart';
 import '../widgets/status_badge.dart';
 
 class DiscussionListScreen extends StatefulWidget {
@@ -20,48 +22,46 @@ class _DiscussionListScreenState extends State<DiscussionListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Discussions')),
-      body: EpsListView<Discussion>(
+    return ListPage(
+      heroColors: DetailColors.discussion,
+      heroTag: 'Join in',
+      title: 'Discussions',
+      subtitle: 'Topics the City has opened for public input.',
+      child: EpsListView<Discussion>(
+        live: const ['discussion'],
         key: _listKey,
+        accent: AppTheme.discussionColor,
         loader: () => context.read<DiscussionService>().list(),
         noun: 'discussion',
         searchHint: 'Search title or description...',
         emptyIcon: Icons.forum_outlined,
-        emptyText: 'No discussions yet.',
+        emptyText: 'No discussions yet',
         loadingText: 'Loading discussions...',
         matches: (d, q) =>
             d.title.toLowerCase().contains(q) ||
             d.description.toLowerCase().contains(q),
-        rowBuilder: (context, d) => EpsListRow(
-          leadingColor: AppTheme.primary,
-          leadingIcon: Icons.chat_bubble_outline,
+        filters: [
+          EpsFilter<Discussion>('All', (_) => true),
+          EpsFilter<Discussion>('Open', (d) => d.isOpen),
+          EpsFilter<Discussion>('Closed', (d) => !d.isOpen),
+        ],
+        rowBuilder: (context, d) => EpsInfoCard(
+          icon: Icons.chat_bubble_outline_rounded,
+          accent: d.isOpen ? AppTheme.discussionColor : AppTheme.mute,
           title: d.title,
-          subtitle: d.description,
-          subtitleMaxLines: 2,
-          trailing: [
-            StatusBadge(
-              d.status,
-              color: d.isOpen ? const Color(0xFF2E7D32) : Colors.grey,
-            ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.chat_bubble_outline,
-                  size: 12,
-                  color: Colors.grey.shade600,
-                ),
-                const SizedBox(width: 3),
-                Text(
-                  '${d.commentCount}',
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-                ),
-              ],
-            ),
+          caption: d.description.isEmpty
+              ? 'Discussion'
+              : d.description.replaceAll('\n', ' '),
+          badge: StatusBadge(d.status),
+          facts: [
+            ('Opened', shortDate(d.createdAt)),
+            ('Comments', '${d.commentCount}'),
+            ('Status', d.isOpen ? 'Open' : 'Closed'),
           ],
+          footer:
+              d.isOpen ? 'Tap to read and join in' : 'Closed to new comments',
           onTap: () async {
-            await context.push('/discussions/${d.id}');
+            await showDiscussionSheet(context, d.id);
             _listKey.currentState?.reload();
           },
         ),

@@ -76,6 +76,7 @@ module.exports = (_io) => {
                     process.env.JWT_SECRET,
                     { expiresIn: rememberMe ? "30d" : "4h" }
                 );
+                await user.update({ lastLoginAt: new Date() });
                 const { password: _password, ...safeUser } = user.toJSON();
                 res.json({ user: safeUser, token });
             } catch (error) {

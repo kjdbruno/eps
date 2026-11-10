@@ -42,21 +42,23 @@ Future<void> main() async {
     unawaited(push.initialize());
   }
 
+  final socket = SocketService();
   final auth = AuthController(
     api: api,
     authService: AuthService(api),
-    socket: SocketService(),
+    socket: socket,
     push: push,
   );
   // Not awaited — the SplashScreen is shown until `auth.isReady` flips, then the
-  // router redirects onward.
-  unawaited(auth.bootstrap());
+  // router redirects onward. It holds for 3 seconds so the bouncing "e" is seen.
+  unawaited(auth.bootstrap(minSplash: const Duration(seconds: 3)));
 
   runApp(
     MultiProvider(
       providers: [
         Provider<ApiClient>.value(value: api),
         Provider<GuestIdentity>.value(value: guest),
+        Provider<SocketService>.value(value: socket),
         Provider<ComplaintService>(create: (_) => ComplaintService(api)),
         Provider<DiscussionService>(create: (_) => DiscussionService(api)),
         Provider<PollService>(create: (_) => PollService(api)),

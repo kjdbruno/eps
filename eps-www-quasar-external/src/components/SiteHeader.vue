@@ -1,115 +1,96 @@
 <template>
-    <q-header class="bg-white custom-border" bordered>
-        <div class="gradient-bar" />
-        <q-toolbar class="q-py-md" :class="$q.screen.gt.xs ? 'q-px-xl' : 'q-px-sm'">
-            <router-link :to="authStore.isAuthenticated ? '/home' : '/'" class="row items-center no-decoration">
-                <img src="../assets/epslogo.png" width="32" class="q-mr-sm" />
-                <div>
-                    <div class="text-body1 text-weight-bold text-dark" style="line-height: 1.2;">eParticipation System</div>
-                </div>
+    <q-header class="pt-header">
+        <div class="pt-bar">
+            <router-link :to="home" class="pt-brand">
+                <img src="../assets/epslogo.png" alt="ePS" />
+                <div>eParticipation system<small>citizen portal</small></div>
             </router-link>
 
-            <q-space />
+            <!-- desktop / tablet nav -->
+            <nav class="pt-nav gt-sm">
+                <router-link class="pt-nav-link" :class="{ 'pt-nav-link--on': isOn('home') }" :to="home">Home</router-link>
+                <router-link class="pt-nav-link" :class="{ 'pt-nav-link--on': isOn('feedback') }" :to="complaintTo">Feedback</router-link>
+                <router-link class="pt-nav-link" :class="{ 'pt-nav-link--on': isOn('discussion') }" :to="base + '/discussion'">Discussion</router-link>
+                <router-link class="pt-nav-link" :class="{ 'pt-nav-link--on': isOn('poll') }" :to="base + '/poll'">Survey</router-link>
 
-            <div class="row items-center q-gutter-md gt-xs">
-                <router-link :to="authStore.isAuthenticated ? '/home' : '/'" class="nav-link">Home</router-link>
-                <router-link :to="complaintTo" class="nav-link">Feedback</router-link>
-                <router-link to="/discussion" class="nav-link">Discussion</router-link>
-                <router-link to="/poll" class="nav-link">Poll</router-link>
-                <template v-if="authStore.isAuthenticated">
-                    <q-btn flat size="md" rounded no-caps class="text-body2 text-weight-medium text-dark text-capitalize" :label="authStore.user?.firstname" >
-                        <q-menu :offset="[0, 5]" class="radius-md no-shadow custom-border" square>
-                            <q-list style="min-width: 150px;">
-                                <q-item clickable v-close-popup @click="authStore.logout()">
-                                    <q-item-section avatar>
-                                        <q-icon name="bi-power" size="xs" />
-                                    </q-item-section>
-                                    <q-item-section>Sign out</q-item-section>
-                                </q-item>
-                            </q-list>
-                        </q-menu>
-                    </q-btn>
-                    <q-btn icon="bi-bell" text-color="grey" flat round>
-                        <q-badge color="negative" floating rounded v-if="authStore.notificationCount">
-                            {{ authStore.notificationCount }}
-                        </q-badge>
-                        <q-menu :offset="[5, 5]" class="radius-md no-shadow custom-border" square @show="openTray">
-                            <q-card square class="no-shadow radius-md" style="width: 350px;">
-                                <q-card-section>
-                                    <div class="text-uppercase text-h6 text-center">my notifications</div>
-                                </q-card-section>
-                                <q-separator />
-                                <q-card-section class="q-pa-none" style="max-height: 60vh; overflow-y: auto;">
-                                    <div v-if="trayLoading && !trayItems.length" class="text-center q-pa-md">
-                                        <q-spinner-ios color="primary" size="1.5em" />
-                                    </div>
-                                    <div v-else-if="!trayItems.length" class="text-center text-caption text-grey q-pa-md">
-                                        you're all caught up
-                                    </div>
-                                    <q-list v-else>
-                                        <q-item v-for="(dt, index) in trayItems" :key="dt.id ?? index" class="q-mb-sm">
-                                            <q-item-section avatar>
-                                                <q-icon
-                                                    :name="dt.isRead ? 'bi-bell' : 'bi-bell-fill'"
-                                                    size="sm"
-                                                    :color="dt.isRead ? 'grey' : 'primary'"
-                                                />
-                                            </q-item-section>
-                                            <q-item-section>
-                                                <q-item-label>{{ dt.content }}</q-item-label>
-                                                <q-item-label caption lines="1">{{ formatDate(dt.createdAt) }}</q-item-label>
-                                            </q-item-section>
-                                        </q-item>
-                                    </q-list>
-                                </q-card-section>
-                            </q-card>
-                        </q-menu>
-                    </q-btn>
+                <template v-if="!authStore.isAuthenticated">
+                    <q-btn rounded outline no-caps color="primary" label="Sign in" to="/login" class="q-ml-md" />
+                    <q-btn rounded unelevated no-caps color="primary" label="Sign up" to="/register" class="q-ml-xs" />
                 </template>
-                <template v-else>
-                    <router-link to="/login" class="nav-link">Sign In</router-link>
-                    <router-link to="/register" class="nav-link">Sign Up</router-link>
-                </template>
-            </div>
+                <NotificationMenu v-if="authStore.isAuthenticated" />
+                <button v-if="authStore.isAuthenticated" type="button" class="pt-acct" aria-label="Account menu">
+                    <span class="pt-acct-av">{{ initials }}</span>
+                    <span class="pt-acct-name">{{ authStore.user?.firstname || 'Account' }}</span>
+                    <q-icon name="bi-chevron-down" size="12px" class="pt-acct-caret" />
 
-            <q-btn flat round dense icon="bi-list" color="dark" class="lt-sm" @click="mobileMenu = true" />
-        </q-toolbar>
+                    <q-menu anchor="bottom right" self="top right" :offset="[0, 8]" class="pt-acct-menu" transition-show="jump-down" transition-hide="jump-up">
+                        <div class="pt-acct-card">
+                            <span class="pt-acct-av pt-acct-av--lg">{{ initials }}</span>
+                            <div class="pt-acct-who">
+                                <div class="pt-acct-fn">{{ fullName || 'Account' }}</div>
+                                <div v-if="authStore.user?.email" class="pt-acct-em">{{ authStore.user.email }}</div>
+                            </div>
+                        </div>
+                        <div class="pt-acct-list">
+                            <router-link v-close-popup class="pt-acct-item" to="/home/complaint">
+                                <q-icon name="bi-file-earmark-text" size="18px" /> My feedback
+                            </router-link>
+                            <router-link v-close-popup class="pt-acct-item" to="/home/complaint?action=file">
+                                <q-icon name="bi-plus-circle" size="18px" /> File feedback
+                            </router-link>
+                        </div>
+                        <div class="pt-acct-list pt-acct-list--end">
+                            <a v-close-popup href="#" class="pt-acct-item pt-acct-item--out" @click.prevent="authStore.logout()">
+                                <q-icon name="bi-box-arrow-right" size="18px" /> Sign out
+                            </a>
+                        </div>
+                    </q-menu>
+                </button>
+            </nav>
+
+            <!-- mobile burger -->
+            <NotificationMenu v-if="authStore.isAuthenticated" class="lt-md q-ml-auto" />
+            <q-btn flat round dense icon="bi-list" size="lg" class="lt-md" :class="{ 'q-ml-auto': !authStore.isAuthenticated }" @click="mobileMenu = !mobileMenu" />
+        </div>
     </q-header>
 
-    <!-- Mobile nav — a real slide-out drawer (off-canvas, overlays the page with a backdrop)
-         instead of the old inline dropdown panel that just pushed the page content down. -->
-    <q-drawer v-model="mobileMenu" side="right" overlay bordered class="lt-sm" :width="260">
-        <div class="row items-center justify-between q-pa-md">
-            <div class="text-subtitle1 text-weight-bold">Menu</div>
-            <q-btn flat round dense icon="close" @click="mobileMenu = false" />
-        </div>
-        <q-separator />
-        <q-list>
-            <q-item clickable v-ripple :to="complaintTo" @click="mobileMenu = false">
+    <!-- Mobile nav — a real slide-out drawer (off-canvas, overlays the page with a backdrop). -->
+    <q-drawer v-model="mobileMenu" side="right" overlay bordered class="lt-md" :width="270">
+        <q-list padding>
+            <q-item clickable v-ripple v-close-popup :to="home">
+                <q-item-section avatar><q-icon name="bi-house" /></q-item-section>
+                <q-item-section>Home</q-item-section>
+            </q-item>
+            <q-item clickable v-ripple v-close-popup :to="complaintTo">
+                <q-item-section avatar><q-icon name="bi-file-earmark-text" /></q-item-section>
                 <q-item-section>Feedback</q-item-section>
             </q-item>
-            <q-item clickable v-ripple to="/discussion" @click="mobileMenu = false">
+            <q-item clickable v-ripple v-close-popup :to="base + '/discussion'">
+                <q-item-section avatar><q-icon name="bi-people" /></q-item-section>
                 <q-item-section>Discussion</q-item-section>
             </q-item>
-            <q-item clickable v-ripple to="/poll" @click="mobileMenu = false">
-                <q-item-section>Poll</q-item-section>
+            <q-item clickable v-ripple v-close-popup :to="base + '/poll'">
+                <q-item-section avatar><q-icon name="bi-bar-chart-line" /></q-item-section>
+                <q-item-section>Survey</q-item-section>
             </q-item>
-            <template v-if="authStore.isAuthenticated">
-                <q-item clickable v-ripple to="/home" @click="mobileMenu = false">
-                    <q-item-section>Home</q-item-section>
+
+            <q-separator spaced />
+
+            <template v-if="!authStore.isAuthenticated">
+                <q-item clickable v-ripple v-close-popup to="/login">
+                    <q-item-section avatar><q-icon name="bi-box-arrow-in-right" /></q-item-section>
+                    <q-item-section>Sign in</q-item-section>
                 </q-item>
-                <q-separator spaced />
-                <q-item clickable v-ripple @click="authStore.logout(); mobileMenu = false">
-                    <q-item-section>Sign out ({{ authStore.user?.firstname }})</q-item-section>
+                <q-item clickable v-ripple v-close-popup to="/register">
+                    <q-item-section avatar><q-icon name="bi-person-plus" /></q-item-section>
+                    <q-item-section>Sign up</q-item-section>
                 </q-item>
             </template>
             <template v-else>
-                <q-separator spaced />
-                <q-item clickable v-ripple to="/login" @click="mobileMenu = false">
-                    <q-item-section>Sign In</q-item-section>
-                </q-item>
-                <q-item clickable v-ripple to="/register" @click="mobileMenu = false">
-                    <q-item-section>Sign Up</q-item-section>
+                <q-item-label header class="text-uppercase">{{ fullName }}</q-item-label>
+                <q-item clickable v-ripple v-close-popup @click="authStore.logout()">
+                    <q-item-section avatar><q-icon name="bi-box-arrow-right" /></q-item-section>
+                    <q-item-section>Sign out</q-item-section>
                 </q-item>
             </template>
         </q-list>
@@ -118,51 +99,32 @@
 
 <script setup>
 import { ref, computed } from 'vue';
+import { useRoute } from 'vue-router';
 import { useAuthStore } from 'src/stores/auth-store';
-import moment from 'moment';
+import NotificationMenu from 'src/components/NotificationMenu.vue';
 
+const route = useRoute();
 const authStore = useAuthStore();
 const mobileMenu = ref(false);
 
+// Signed in, the same pages live under /home; a guest uses the open ones at the top level.
+const base = computed(() => (authStore.isAuthenticated ? '/home' : ''));
+const home = computed(() => (authStore.isAuthenticated ? '/home' : '/'));
+
 // "My Complaints" only exists behind login (/home/complaint) — a guest doesn't have a complaint
-// list to view yet, so this points them at where a complaint actually starts instead. Same
-// branching Home/Sign-out vs Sign-in/Sign-up already uses below.
-const complaintTo = computed(() => authStore.isAuthenticated ? '/home/complaint' : '/file-complaint');
+// list to view yet, so this points them at where a complaint actually starts instead.
+const complaintTo = computed(() => (authStore.isAuthenticated ? '/home/complaint' : '/file-complaint'));
 
-const formatDate = (timestamp) => moment(timestamp).fromNow();
+const fullName = computed(() => [authStore.user?.firstname, authStore.user?.lastname].filter(Boolean).join(' '));
+const initials = computed(() => (fullName.value || authStore.user?.firstname || '?').split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase());
 
-// Notification tray — mirrors the mobile app's NotificationBell:
-//  1. seed instantly from the socket's (unread) list so there's something to show,
-//  2. load the full read+unread history from GET /api/notification,
-//  3. mark everything read ONLY after the list is on screen — marking read makes the
-//     socket push back an empty list, which would otherwise wipe the tray immediately.
-const trayItems = ref([]);
-const trayLoading = ref(false);
-
-const openTray = async () => {
-    trayItems.value = [...(authStore.notificationList || [])];
-    trayLoading.value = true;
-    try {
-        await authStore.fetchNotifications();
-        trayItems.value = [...(authStore.notificationList || [])];
-    } finally {
-        trayLoading.value = false;
-        authStore.markNotificationsRead();
-    }
+// which top-level link the current page belongs to
+const isOn = (key) => {
+    const p = route.path;
+    if (key === 'home') return p === '/' || p === '/home';
+    if (key === 'feedback') return p.startsWith('/home/complaint') || p.startsWith('/file-complaint') || p.startsWith('/verify-complaint');
+    if (key === 'discussion') return p.includes('/discussion');
+    if (key === 'poll') return p.includes('/poll');
+    return false;
 };
 </script>
-
-<style scoped>
-.no-decoration {
-    text-decoration: none;
-}
-.nav-link {
-    text-decoration: none;
-    color: #444;
-    font-weight: 500;
-    font-size: 0.9rem;
-}
-.nav-link:hover {
-    color: var(--q-primary);
-}
-</style>

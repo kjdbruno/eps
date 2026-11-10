@@ -1,4 +1,4 @@
-const { Op } = require('sequelize');
+const { Op, QueryTypes } = require('sequelize');
 const { Message, User, Notification } = require('../models');
 const { getUserSocketIds } = require('../utils/connectedUsers');
 const { pushNotifications } = require('../utils/notifySocket');
@@ -11,6 +11,48 @@ module.exports = (_io) => {
     io = _io;
 
     return {
+        // One row per person the caller has exchanged messages with, most recent first: the last
+        // message, who sent it, and how many of theirs are still unread — what the header's chat
+        // menu and the Messages page list. Worked out by the database (the id of the latest
+        // message and the unread count per person) rather than by reading the whole history.
+        getConversations: async (req, res) => {
+            const me = req.userId;
+
+            try {
+                const threads = await Message.sequelize.query(
+                    `SELECT x.other AS other, MAX(x.id) AS lastId, SUM(x.unread) AS unread
+                     FROM (
+                         SELECT receiverId AS other, id, 0 AS unread FROM messages WHERE senderId = :me
+                         UNION ALL
+                         SELECT senderId AS other, id, (isRead = 0) AS unread FROM messages WHERE receiverId = :me
+                     ) x
+                     GROUP BY x.other`,
+                    { replacements: { me }, type: QueryTypes.SELECT }
+                );
+                if (!threads.length) return res.json({ data: [] });
+
+                const lasts = await Message.findAll({
+                    where: { id: threads.map(t => t.lastId) },
+                    attributes: ['id', 'senderId', 'receiverId', 'content', 'createdAt'],
+                    order: [['createdAt', 'DESC'], ['id', 'DESC']],
+                });
+                const unreadOf = new Map(threads.map(t => [Number(t.lastId), Number(t.unread)]));
+
+                const data = lasts.map(m => ({
+                    userId: m.senderId === me ? m.receiverId : m.senderId,
+                    lastMessage: m.content,
+                    lastMessageAt: m.createdAt,
+                    fromMe: m.senderId === me,
+                    unreadCount: unreadOf.get(m.id) || 0,
+                }));
+
+                return res.json({ data });
+            } catch (error) {
+                console.error('Error listing conversations:', error);
+                return res.status(500).json({ message: 'Server error.', error: error.message });
+            }
+        },
+
         // Full history between the caller and :userId, oldest first (chat reading order). Marks
         // every message the OTHER person sent as read, since opening the thread is what "reading"
         // it means here — mirrors NotificationController.markAllRead's same-request-as-read-receipt

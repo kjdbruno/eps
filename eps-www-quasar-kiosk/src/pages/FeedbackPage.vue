@@ -1,159 +1,160 @@
 <template>
-    <q-page class="kf-page">
-        <div class="kf-shell">
-            <template v-if="!submitted">
-                <div class="row items-center q-mb-md">
-                    <div>
-                        <div class="kx-eyebrow">feedback module</div>
-                        <div class="text-h4 text-weight-bold">Give Feedback</div>
+    <div class="kx-center">
+        <template v-if="!submitted">
+            <div class="kx-head">
+                <span class="kx-head-ico"><q-icon name="bi-emoji-smile" /></span>
+                <div>
+                    <div class="kx-head-t">Give feedback</div>
+                    <div class="kx-head-s">Rate the service you just received — it takes about a minute.</div>
+                </div>
+            </div>
+
+            <!-- where you are -->
+            <div class="kx-progress">
+                <div class="kx-progress-top">
+                    <span class="kx-progress-phase">{{ PHASES[phaseIndex] }}</span>
+                    <span class="kx-progress-n">step {{ step + 1 }} of {{ totalSteps }}</span>
+                </div>
+                <div class="kx-bar"><span :style="{ width: ((step + 1) / totalSteps * 100) + '%' }" /></div>
+                <div class="kx-phases">
+                    <span v-for="(ph, i) in PHASES" :key="ph" class="kx-phase" :class="{ 'kx-phase--on': i === phaseIndex, 'kx-phase--done': i < phaseIndex }">{{ ph }}</span>
+                </div>
+            </div>
+
+            <div class="kx-card kx-form-card kx-stage">
+                <!-- step 0: office -->
+                <div v-if="step === 0">
+                    <div class="kx-question">Which office did you visit today?</div>
+                    <div class="kx-question-sub">Tap the one you just transacted with.</div>
+                    <div v-if="loadingOffices" class="q-pa-lg text-center"><q-spinner-oval size="2.4em" color="primary" /></div>
+                    <div v-else class="kx-choices">
+                        <button v-for="o in offices" :key="o.id" type="button" class="kx-choice" :class="{ 'kx-choice--on': officeId === o.id }" @click="officeId = o.id">
+                            <span class="dot"><i /></span><span>{{ o.name }}</span>
+                        </button>
                     </div>
-                    <q-space />
-                    <div class="text-caption text-grey">step {{ step + 1 }} of {{ totalSteps }}</div>
+                    <div v-if="errors.office" class="kx-err q-mt-md">{{ errors.office }}</div>
                 </div>
 
-                <q-linear-progress :value="(step + 1) / totalSteps" color="primary" rounded class="q-mb-xl" style="height: 8px;" />
+                <!-- step 1: client info -->
+                <div v-if="step === 1">
+                    <div class="kx-question">Tell us about yourself</div>
+                    <div class="kx-question-sub">This helps us understand who we are serving.</div>
 
-                <q-card flat class="kf-card radius-md custom-border q-pa-xl">
-                    <!-- step 0: office -->
-                    <div v-if="step === 0">
-                        <div class="text-h6 text-weight-bold q-mb-md">Which office did you visit today?</div>
-                        <div v-if="loadingOffices" class="q-pa-lg text-center">
-                            <q-spinner-ios size="2em" />
-                        </div>
-                        <div v-else class="row q-gutter-sm q-mb-md">
-                            <q-btn
-                                v-for="o in offices" :key="o.id"
-                                no-caps unelevated rounded size="lg" :label="o.name"
-                                class="kf-chip" :class="officeId === o.id ? 'kf-chip--active' : ''"
-                                @click="officeId = o.id"
-                            />
-                        </div>
-                        <div v-if="errors.office" class="text-negative text-caption">{{ errors.office }}</div>
+                    <div class="kx-label" :class="{ 'kx-label--err': errors.type }">Client type <i>required</i></div>
+                    <div class="kx-choices q-mb-lg">
+                        <button v-for="opt in CLIENT_TYPES" :key="opt.value" type="button" class="kx-choice" :class="{ 'kx-choice--on': type === opt.value }" @click="type = opt.value">
+                            <span class="dot"><i /></span><span>{{ opt.label }}</span>
+                        </button>
+                    </div>
+                    <div v-if="errors.type" class="kx-err q-mb-md">{{ errors.type }}</div>
+
+                    <div class="kx-label">Sex</div>
+                    <div class="kx-choices q-mb-lg">
+                        <button v-for="o in SEX_OPTIONS" :key="o" type="button" class="kx-choice" :class="{ 'kx-choice--on': sex === o }" @click="sex = o">
+                            <span class="dot"><i /></span><span>{{ o }}</span>
+                        </button>
                     </div>
 
-                    <!-- step 1: client info -->
-                    <div v-if="step === 1">
-                        <div class="text-h6 text-weight-bold q-mb-md">Tell us about yourself</div>
-                        <div class="text-caption text-grey q-mb-xs">Client type</div>
-                        <div class="row q-gutter-sm q-mb-lg">
-                            <q-btn
-                                v-for="opt in CLIENT_TYPES" :key="opt.value"
-                                no-caps unelevated rounded size="lg" :label="opt.label"
-                                class="kf-chip" :class="type === opt.value ? 'kf-chip--active' : ''"
-                                @click="type = opt.value"
-                            />
+                    <div class="kx-grid">
+                        <div>
+                            <div class="kx-label">Age</div>
+                            <q-input v-model="age" outlined class="kx-field" inputmode="numeric" placeholder="e.g. 34" />
                         </div>
-                        <div v-if="errors.type" class="text-negative text-caption q-mb-md">{{ errors.type }}</div>
-
-                        <div class="row q-col-gutter-md">
-                            <div class="col-12 col-sm-6">
-                                <q-select outlined v-model="sex" :options="['Male', 'Female', 'Others']" label="Sex" input-class="kc-input" />
-                            </div>
-                            <div class="col-12 col-sm-6">
-                                <q-input outlined v-model="age" label="Age" input-class="kc-input" />
-                            </div>
-                            <div class="col-12 col-sm-6">
-                                <q-input outlined v-model="residence" label="Residence / city" input-class="kc-input" />
-                            </div>
-                            <div class="col-12 col-sm-6">
-                                <q-input outlined v-model="email" label="Email (optional)" input-class="kc-input" />
-                            </div>
-                            <div class="col-12">
-                                <q-input outlined v-model="serviceAvailed" label="Service availed" input-class="kc-input" />
-                            </div>
+                        <div>
+                            <div class="kx-label">Residence / city</div>
+                            <q-input v-model="residence" outlined class="kx-field" placeholder="e.g. San Fernando City" />
+                        </div>
+                        <div>
+                            <div class="kx-label">Email <i>optional</i></div>
+                            <q-input v-model="email" type="email" outlined class="kx-field" placeholder="you@example.com" />
+                        </div>
+                        <div>
+                            <div class="kx-label">Service availed</div>
+                            <q-input v-model="serviceAvailed" outlined class="kx-field" placeholder="e.g. Business permit" />
                         </div>
                     </div>
+                </div>
 
-                    <!-- step 2: CC1 -->
-                    <div v-if="step === 2">
-                        <div class="text-h6 text-weight-bold q-mb-xs">Citizen's Charter awareness</div>
-                        <div class="text-body2 text-grey q-mb-md">Which of the following best describes your awareness of a CC?</div>
-                        <div class="column q-gutter-sm">
-                            <q-btn
-                                v-for="opt in CC1_OPTIONS" :key="opt.value"
-                                no-caps unelevated align="left" :label="opt.label" size="lg"
-                                class="kf-chip kf-chip--wide" :class="cc1 === opt.value ? 'kf-chip--active' : ''"
-                                @click="cc1 = opt.value"
-                            />
-                        </div>
-                        <div v-if="errors.cc1" class="text-negative text-caption q-mt-md">{{ errors.cc1 }}</div>
+                <!-- step 2: CC1 -->
+                <div v-if="step === 2">
+                    <div class="kx-question">Citizen's Charter awareness</div>
+                    <div class="kx-question-sub">Which of the following best describes your awareness of a CC?</div>
+                    <div class="kx-choices kx-choices--one">
+                        <button v-for="opt in CC1_OPTIONS" :key="opt.value" type="button" class="kx-choice" :class="{ 'kx-choice--on': cc1 === opt.value }" @click="cc1 = opt.value">
+                            <span class="dot"><i /></span><span>{{ opt.label }}</span>
+                        </button>
                     </div>
+                    <div v-if="errors.cc1" class="kx-err q-mt-md">{{ errors.cc1 }}</div>
+                </div>
 
-                    <!-- step 3: CC2 -->
-                    <div v-if="step === 3">
-                        <div class="text-h6 text-weight-bold q-mb-xs">Citizen's Charter visibility</div>
-                        <div class="text-body2 text-grey q-mb-md">If aware of CC, was it visible in the office you transacted with?</div>
-                        <div v-if="cc1 === '4'" class="text-caption text-grey q-mb-sm">Not applicable — you indicated you never saw this office's CC.</div>
-                        <div class="row q-gutter-sm">
-                            <q-btn
-                                v-for="opt in CC2_OPTIONS" :key="opt.value"
-                                no-caps unelevated rounded size="lg" :label="opt.label"
-                                :disable="cc1 === '4'"
-                                class="kf-chip" :class="cc2 === opt.value ? 'kf-chip--active' : ''"
-                                @click="cc2 = opt.value"
-                            />
-                        </div>
-                        <div v-if="errors.cc2" class="text-negative text-caption q-mt-md">{{ errors.cc2 }}</div>
+                <!-- step 3: CC2 -->
+                <div v-if="step === 3">
+                    <div class="kx-question">Citizen's Charter visibility</div>
+                    <div class="kx-question-sub">If aware of CC, was it visible in the office you transacted with?</div>
+                    <div v-if="cc1 === '4'" class="kx-note q-mb-md"><q-icon name="bi-info-circle" size="20px" /><span>Not applicable — you indicated you never saw this office's CC.</span></div>
+                    <div class="kx-choices">
+                        <button v-for="opt in CC2_OPTIONS" :key="opt.value" type="button" class="kx-choice" :class="{ 'kx-choice--on': cc2 === opt.value }" :disabled="cc1 === '4'" @click="cc2 = opt.value">
+                            <span class="dot"><i /></span><span>{{ opt.label }}</span>
+                        </button>
                     </div>
+                    <div v-if="errors.cc2" class="kx-err q-mt-md">{{ errors.cc2 }}</div>
+                </div>
 
-                    <!-- step 4: CC3 -->
-                    <div v-if="step === 4">
-                        <div class="text-h6 text-weight-bold q-mb-xs">Citizen's Charter usefulness</div>
-                        <div class="text-body2 text-grey q-mb-md">How much did the CC help you in your transaction?</div>
-                        <div v-if="cc1 === '4'" class="text-caption text-grey q-mb-sm">Not applicable — you indicated you never saw this office's CC.</div>
-                        <div class="row q-gutter-sm">
-                            <q-btn
-                                v-for="opt in CC3_OPTIONS" :key="opt.value"
-                                no-caps unelevated rounded size="lg" :label="opt.label"
-                                :disable="cc1 === '4'"
-                                class="kf-chip" :class="cc3 === opt.value ? 'kf-chip--active' : ''"
-                                @click="cc3 = opt.value"
-                            />
-                        </div>
-                        <div v-if="errors.cc3" class="text-negative text-caption q-mt-md">{{ errors.cc3 }}</div>
+                <!-- step 4: CC3 -->
+                <div v-if="step === 4">
+                    <div class="kx-question">Citizen's Charter usefulness</div>
+                    <div class="kx-question-sub">How much did the CC help you in your transaction?</div>
+                    <div v-if="cc1 === '4'" class="kx-note q-mb-md"><q-icon name="bi-info-circle" size="20px" /><span>Not applicable — you indicated you never saw this office's CC.</span></div>
+                    <div class="kx-choices">
+                        <button v-for="opt in CC3_OPTIONS" :key="opt.value" type="button" class="kx-choice" :class="{ 'kx-choice--on': cc3 === opt.value }" :disabled="cc1 === '4'" @click="cc3 = opt.value">
+                            <span class="dot"><i /></span><span>{{ opt.label }}</span>
+                        </button>
                     </div>
+                    <div v-if="errors.cc3" class="kx-err q-mt-md">{{ errors.cc3 }}</div>
+                </div>
 
-                    <!-- steps 5-13: sqd0-8, one dimension per step -->
-                    <div v-if="currentSqd" class="text-center">
-                        <div class="text-h6 text-weight-bold text-uppercase q-mb-xs">{{ currentSqd.key }}</div>
-                        <div class="text-body1 text-grey q-mb-xl">{{ currentSqd.label }}</div>
-                        <div class="row justify-center q-gutter-lg items-start">
-                            <div v-for="n in 5" :key="n" class="kf-sqd-option" :class="{ 'kf-sqd-option--active': sqd[currentSqd.key] === n }" @click="sqd[currentSqd.key] = n">
-                                <q-icon :name="icons[n - 1]" :color="colors[n - 1]" size="56px" />
-                                <div class="text-caption q-mt-sm text-center">{{ SQD_SCALE_LABELS[n - 1] }}</div>
-                            </div>
-                            <div class="kf-sqd-option" :class="{ 'kf-sqd-option--active': sqd[currentSqd.key] === 0 }" @click="sqd[currentSqd.key] = 0">
-                                <q-icon name="bi-dash-circle" color="grey" size="56px" />
-                                <div class="text-caption q-mt-sm text-center">N/A</div>
-                            </div>
-                        </div>
+                <!-- steps 5-13: sqd0-8, one statement per step -->
+                <div v-if="currentSqd" class="text-center">
+                    <div class="kx-eyebrow">statement {{ step - 4 }} of {{ SQD_QUESTIONS.length }}</div>
+                    <div class="kx-question q-mt-sm">{{ currentSqd.label }}</div>
+                    <div class="kx-question-sub">How much do you agree?</div>
+                    <div class="kx-faces">
+                        <button v-for="n in 5" :key="n" type="button" class="kx-face" :class="{ 'kx-face--on': sqd[currentSqd.key] === n }" @click="sqd[currentSqd.key] = n">
+                            <q-icon :name="icons[n - 1]" :color="colors[n - 1]" />
+                            <small>{{ SQD_SCALE_LABELS[n - 1] }}</small>
+                        </button>
+                        <button type="button" class="kx-face" :class="{ 'kx-face--on': sqd[currentSqd.key] === 0 }" @click="sqd[currentSqd.key] = 0">
+                            <q-icon name="bi-dash-circle" color="grey" />
+                            <small>Not applicable</small>
+                        </button>
                     </div>
+                </div>
 
-                    <!-- last step: suggestion -->
-                    <div v-if="step === totalSteps - 1">
-                        <div class="text-h6 text-weight-bold q-mb-md">Anything else you'd like to share?</div>
-                        <q-input outlined v-model="suggestion" type="textarea" rows="5" label="Suggestion (optional)" input-class="kc-input" />
-                    </div>
+                <!-- last step: suggestion -->
+                <div v-if="step === totalSteps - 1">
+                    <div class="kx-question">Anything else you'd like to share?</div>
+                    <div class="kx-question-sub">A suggestion, a compliment, or a concern — it is optional.</div>
+                    <q-input v-model="suggestion" type="textarea" rows="6" outlined class="kx-field" placeholder="Type your suggestion here..." />
+                </div>
+            </div>
 
-                    <div class="row justify-between kf-footer">
-                        <q-btn rounded v-if="step > 0" flat no-caps size="lg" label="back" @click="step--" />
-                        <q-space v-else />
-                        <q-btn rounded unelevated no-caps size="lg" color="primary" :label="step === totalSteps - 1 ? 'submit' : 'next'" :loading="loading" @click="nextStep" />
-                    </div>
-                </q-card>
-            </template>
+            <div class="kx-actions q-mb-lg">
+                <q-btn v-if="step > 0" flat rounded no-caps color="primary" class="kx-btn" icon="bi-arrow-left" label="Back" @click="step--" />
+                <q-btn v-else flat rounded no-caps color="primary" class="kx-btn" icon="bi-x-lg" label="Cancel" to="/" />
+                <q-btn unelevated rounded no-caps color="primary" class="kx-btn" :icon-right="step === totalSteps - 1 ? 'bi-send' : 'bi-arrow-right'" :label="step === totalSteps - 1 ? 'Submit' : 'Next'" :loading="loading" @click="nextStep" />
+            </div>
+        </template>
 
-            <template v-else>
-                <q-card flat class="kf-card kf-success radius-md custom-border q-pa-xl text-center">
-                    <q-icon name="bi-check-circle-fill" color="positive" size="72px" class="q-mb-md" />
-                    <div class="text-h5 text-weight-bold q-mb-sm">Thank You!</div>
-                    <div class="text-body1 text-grey q-mb-lg">Your feedback helps us improve our service.</div>
-                    <div class="text-caption text-grey q-mb-lg">Returning to home in {{ countdown }}s&hellip;</div>
-                    <q-btn unelevated color="primary" size="lg" class="full-width" label="done" to="/" />
-                </q-card>
-            </template>
-        </div>
-    </q-page>
+        <template v-else>
+            <div class="kx-card kx-done">
+                <div class="kx-done-ico"><q-icon name="bi-heart-fill" /></div>
+                <div class="kx-done-t">Thank you!</div>
+                <div class="kx-done-s">Your feedback helps us improve our service.</div>
+                <div class="kx-count">Returning to home in {{ countdown }}s&hellip;</div>
+                <q-btn unelevated rounded no-caps color="primary" class="kx-btn full-width" icon="bi-house-fill" label="Done" to="/" />
+            </div>
+        </template>
+    </div>
 </template>
 
 <script setup>
@@ -189,6 +190,8 @@ const CC3_OPTIONS = [
     { value: '4', label: 'Not Applicable' },
 ];
 
+const SEX_OPTIONS = ['Male', 'Female', 'Others'];
+
 const SQD_QUESTIONS = [
     { key: 'sqd0', label: 'I am satisfied with the service that I availed' },
     { key: 'sqd1', label: 'I spent a reasonable amount of time for my transaction' },
@@ -211,6 +214,11 @@ const totalSteps = 5 + SQD_QUESTIONS.length + 1;
 const step = ref(0);
 const loading = ref(false);
 const submitted = ref(false);
+
+// the five stages shown above the question: office, about you, the charter (3 steps), the service
+// rating (9 steps), and the last word
+const PHASES = ['Office', 'About you', 'Charter', 'Service', 'Finish'];
+const phaseIndex = computed(() => (step.value === 0 ? 0 : step.value === 1 ? 1 : step.value <= 4 ? 2 : step.value < totalSteps - 1 ? 3 : 4));
 
 const currentSqd = computed(() => {
     const idx = step.value - 5;
@@ -336,69 +344,3 @@ onUnmounted(() => {
     if (countdownTimer) clearInterval(countdownTimer);
 });
 </script>
-
-<style scoped>
-.kf-page {
-    padding: 32px;
-    display: flex;
-    justify-content: center;
-}
-.kf-shell {
-    width: 100%;
-    max-width: 820px;
-}
-.kx-eyebrow {
-    font-size: 13px;
-    letter-spacing: .08em;
-    text-transform: uppercase;
-    color: #8493AC;
-    margin-bottom: 4px;
-}
-.kf-card {
-    background: #FFFFFF;
-    min-height: 420px;
-    display: flex;
-    flex-direction: column;
-}
-.kf-footer {
-    flex: 0 0 auto;
-    margin-top: auto;
-    padding-top: 24px;
-}
-.kf-chip {
-    background: #FFFFFF;
-    color: #4C5C79;
-    border: 1px solid #DCE4F0;
-    padding: 0 20px;
-    font-size: 15px;
-}
-.kf-chip--active {
-    background: var(--q-primary);
-    color: #FFFFFF;
-    border-color: var(--q-primary);
-}
-.kf-chip--wide {
-    width: 100%;
-    justify-content: flex-start;
-    white-space: normal;
-    text-align: left;
-    padding: 16px 20px;
-}
-.kf-sqd-option {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 112px;
-    padding: 16px 6px;
-    border-radius: 12px;
-    border: 2px solid transparent;
-    cursor: pointer;
-}
-.kf-sqd-option:hover {
-    background: #F6F9FC;
-}
-.kf-sqd-option--active {
-    border-color: var(--q-primary);
-    background: #F0F6FF;
-}
-</style>

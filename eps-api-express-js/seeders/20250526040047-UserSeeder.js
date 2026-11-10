@@ -25,54 +25,23 @@ module.exports = {
         role: 'super', 
         avatar: '/uploads/avatar.png',
         isActive: true, 
-        createdAt: new Date(), 
-        updatedAt: new Date() 
+        // this password is written in this file, so everybody who can read it knows it: the account must choose its own at the first sign-in
+        mustChangePassword: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
       },
-      { 
-        firstname: 'CICTO',
-        lastname: 'CSFLU', 
-        username: 'Administrator', 
-        password: hashedPassword, 
-        role: 'admin', 
-        avatar: '/uploads/avatar.png',
-        isActive: true, 
-        createdAt: new Date(), 
-        updatedAt: new Date() 
-      },
-      { 
-        firstname: 'Zhandra Louisa',
-        lastname: 'Manongdo', 
-        username: 'zlmanongdo', 
-        password: defaultPassword, 
-        role: 'admin', 
-        avatar: '/uploads/avatar.png',
-        isActive: true, 
-        createdAt: new Date(), 
-        updatedAt: new Date() 
-      },
-      { 
-        firstname: 'Erwin',
-        lastname: 'Beleo', 
-        username: 'ebeleo', 
-        password: defaultPassword, 
-        role: 'admin', 
-        avatar: '/uploads/avatar.png',
-        isActive: true, 
-        createdAt: new Date(), 
-        updatedAt: new Date() 
-      },
-      { 
-        firstname: 'CICTO',
-        lastname: 'CSFLU', 
-        username: 'Workstation', 
-        password: hashedPassword, 
-        role: 'workstation', 
-        avatar: '/uploads/avatar.png',
-        isActive: true, 
-        createdAt: new Date(), 
-        updatedAt: new Date() 
-      }
     ]);
+
+    // the account belongs to CICTO (needs the offices first: OfficeSeeder)
+    const userId = await queryInterface.rawSelect('Users', { where: { username: 'SuperAdministrator' } }, ['id']);
+    const officeId = await queryInterface.rawSelect('Offices', { where: { alias: 'CICTO' } }, ['id']);
+    if (userId && officeId) {
+      await queryInterface.bulkInsert('Staffs', [
+        { userId, officeId, createdAt: new Date(), updatedAt: new Date() },
+      ]);
+    } else {
+      console.log('UserSeeder: the CICTO office does not exist yet, so SuperAdministrator was not linked to it. Run the OfficeSeeder first.');
+    }
   },
 
   async down (queryInterface, Sequelize) {
@@ -82,6 +51,8 @@ module.exports = {
      * Example:
      * await queryInterface.bulkDelete('People', null, {});
      */
+    const userId = await queryInterface.rawSelect('Users', { where: { username: 'SuperAdministrator' } }, ['id']);
+    if (userId) await queryInterface.bulkDelete('Staffs', { userId });
     await queryInterface.bulkDelete('Users', null, {});
   }
 };

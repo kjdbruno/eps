@@ -95,7 +95,8 @@ const getStaffComplaintOffice = async (userId, complaintId) => {
     if (!staff) return { staff: null, complaintOffice: null };
 
     const complaintOffice = await ComplaintOffice.findOne({
-        where: { complaintId, officeId: staff.officeId }
+        // an office that handed the feedback over no longer acts on it
+        where: { complaintId, officeId: staff.officeId, isActive: true }
     });
 
     return { staff, complaintOffice };
@@ -235,6 +236,12 @@ module.exports = (_io) => {
                     if (!complaint) {
                         return res.status(404).json({ message: 'Feedback not found.' });
                     }
+                    // A super/admin whose own office (Staff row) is assigned to this complaint is
+                    // acting for that office too, so their response stamps its receipt exactly like
+                    // a workstation response does. null for a super/admin with no office, or whose
+                    // office isn't assigned here — their response then stays a general supervisory
+                    // update that touches no office's queue.
+                    ({ complaintOffice } = await getStaffComplaintOffice(userId, complaintId));
                 }
 
                 const response = await Response.create({
@@ -322,6 +329,10 @@ module.exports = (_io) => {
                 const { complaintOffice } = await getStaffComplaintOffice(userId, complaintId);
                 if (!complaintOffice) {
                     return res.status(404).json({ message: 'This feedback is not assigned to your office.' });
+                }
+                // an office marks its part done only after it has received the feedback
+                if (complaintOffice.status === 'pending') {
+                    return res.status(409).json({ message: 'Your office has not received this feedback yet. Receive it first.' });
                 }
 
                 const response = await Response.create({

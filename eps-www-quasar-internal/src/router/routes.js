@@ -1,5 +1,16 @@
 import { useAuthStore } from 'src/stores/auth-store';
 
+// Role gate for a preference section: anyone else lands back on /preference, which then picks a
+// section they can open (or shows the empty state).
+const preferenceGuard = (roles) => (to, from, next) => {
+  const auth = useAuthStore();
+  if (roles.includes(auth.user?.role)) {
+    next();
+  } else {
+    next('/preference');
+  }
+};
+
 const routes = [
   {
     path: '/',
@@ -109,8 +120,16 @@ const routes = [
         next()
       }
     },
+    // One page per preference section, each its own route so the drawer's Preference group can
+    // link (and highlight) them directly. Office/User are super-only, Holiday super/admin — the same
+    // split the API enforces. `/preference` on its own sends you to the first section your role can open.
     children: [
-      { path: '', component: () => import('src/pages/PreferencePage.vue'), name: 'preference' }
+      { path: '', component: () => import('src/pages/PreferencePage.vue'), name: 'preference' },
+      { path: 'office', component: () => import('src/pages/PreferencePage.vue'), name: 'office preference', beforeEnter: preferenceGuard(['super', 'admin']) },
+      { path: 'user', component: () => import('src/pages/PreferencePage.vue'), name: 'user preference', beforeEnter: preferenceGuard(['super']) },
+      { path: 'holiday', component: () => import('src/pages/PreferencePage.vue'), name: 'holiday preference', beforeEnter: preferenceGuard(['super', 'admin']) },
+      { path: 'canned', component: () => import('src/pages/PreferencePage.vue'), name: 'canned preference', beforeEnter: preferenceGuard(['super', 'admin']) },
+      { path: 'clients', component: () => import('src/pages/PreferencePage.vue'), name: 'client preference', beforeEnter: preferenceGuard(['super', 'admin']) }
     ]
   },
   {

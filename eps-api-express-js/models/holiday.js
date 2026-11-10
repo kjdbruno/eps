@@ -24,6 +24,12 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false
     },
+    // regular / special (non-working) / working (special working day) / local (a day of the city)
+    category: {
+      type: DataTypes.STRING(20),
+      allowNull: false,
+      defaultValue: 'regular'
+    },
     isActive: {
       type: DataTypes.BOOLEAN,
       defaultValue: true

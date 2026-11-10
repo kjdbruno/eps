@@ -10,6 +10,7 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue';
 import L from 'leaflet';
+import { esc } from 'src/utils/escape';
 import 'leaflet/dist/leaflet.css';
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
@@ -49,8 +50,8 @@ const render = () => {
     points.forEach(m => {
         const marker = L.marker([m.lat, m.lng]);
         if (m.title || m.subtitle) {
-            const title = m.title ? `<b>${m.title}</b>` : '';
-            const subtitle = m.subtitle ? `<div>${m.subtitle}</div>` : '';
+            const title = m.title ? `<b>${esc(m.title)}</b>` : '';
+            const subtitle = m.subtitle ? `<div>${esc(m.subtitle)}</div>` : '';
             marker.bindPopup(`${title}${subtitle}`);
         }
         marker.addTo(markerLayer);

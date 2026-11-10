@@ -48,7 +48,7 @@ class _PhotoPickerState extends State<PhotoPicker> {
               Stack(
                 children: [
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(14),
                     child: Image.file(
                       File(_photos[i].path),
                       width: 80,
@@ -79,14 +79,19 @@ class _PhotoPickerState extends State<PhotoPicker> {
             if (_photos.length < widget.max)
               InkWell(
                 onTap: _add,
+                borderRadius: BorderRadius.circular(14),
                 child: Container(
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade400),
-                    borderRadius: BorderRadius.circular(8),
+                    color: const Color(0xFFF2F6FD),
+                    border: Border.all(color: const Color(0xFFB8C4D9)),
+                    borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Icon(Icons.add_a_photo_outlined),
+                  child: const Icon(
+                    Icons.add_a_photo_outlined,
+                    color: Color(0xFF204888),
+                  ),
                 ),
               ),
           ],

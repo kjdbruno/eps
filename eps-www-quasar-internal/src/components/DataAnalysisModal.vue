@@ -1,43 +1,42 @@
 <template>
     <q-dialog
         :model-value="modelValue"
+        class="dialog"
         @update:model-value="$emit('update:modelValue', $event)"
         @show="onShow"
-        full-height
     >
-        <q-card class="da-card column no-wrap">
-            <q-card-section class="row items-center q-pa-lg da-header">
+        <q-card>
+            <q-card-section class="row items-center no-wrap">
                 <div>
-                    <div class="da-eyebrow">data analysis &middot; ai recommendations</div>
-                    <div class="text-h5">Analyze Data</div>
-                    <div class="text-caption text-grey q-mt-xs" v-if="result?.range?.label">
-                        {{ result.range.label }}
-                        <span v-if="result.generatedAt"> &middot; generated {{ formatWhen(result.generatedAt) }}</span>
-                    </div>
-                    <div class="text-caption text-grey q-mt-xs" v-else>
-                        {{ periodLabel }} &middot; {{ year }}
+                    <div class="text-caption">data analysis &middot; ai recommendations</div>
+                    <div class="text-h5 text-uppercase">Analyze Data</div>
+                    <div class="rc-hero-badges">
+                        <template v-if="result?.range?.label">
+                            <span class="rc-hero-pill">{{ result.range.label }}</span>
+                            <span class="rc-hero-pill" v-if="result.generatedAt">generated {{ formatWhen(result.generatedAt) }}</span>
+                        </template>
+                        <span class="rc-hero-pill" v-else>{{ periodLabel }} &middot; {{ year }}</span>
                     </div>
                 </div>
                 <q-space />
                 <q-btn
                     v-if="result && !loading"
-                    flat no-caps rounded size="sm" icon="bi-arrow-clockwise" label="re-run"
+                    outline no-caps rounded size="sm" icon="bi-arrow-clockwise" label="re-run"
                     class="q-mr-sm" @click="run"
                 />
-                <q-btn icon="bi-x-circle" flat round dense v-close-popup />
+                <q-btn unelevated round flat icon="bi-x-circle" v-close-popup />
             </q-card-section>
-            <q-separator />
 
-            <div class="da-body col scroll">
+            <q-card-section class="col scroll bg-accent">
                 <!-- loading -->
-                <div v-if="loading" class="column items-center justify-center q-pa-xl text-grey">
+                <div v-if="loading" class="rc-block column items-center justify-center q-pa-xl text-grey">
                     <q-spinner-ios size="2.5em" color="primary" />
                     <div class="text-subtitle2 q-mt-md">Analyzing {{ periodLabel.toLowerCase() }} data for {{ year }}…</div>
                     <div class="text-caption q-mt-xs">Reviewing feedback, CSM reports, and engagement across every office.</div>
                 </div>
 
                 <!-- error -->
-                <div v-else-if="error" class="column items-center justify-center q-pa-xl text-center">
+                <div v-else-if="error" class="rc-block column items-center justify-center q-pa-xl text-center">
                     <q-icon name="bi-exclamation-triangle" size="2.5em" color="negative" />
                     <div class="text-subtitle2 q-mt-md text-negative">{{ error }}</div>
                     <q-btn no-caps rounded unelevated color="primary" label="try again" class="q-mt-md" @click="run" />
@@ -46,7 +45,7 @@
                 <!-- result -->
                 <template v-else-if="result">
                     <!-- city -->
-                    <div class="q-pa-lg">
+                    <div class="rc-block">
                         <div class="da-section-title">
                             <q-icon name="bi-buildings" size="1.1em" class="q-mr-sm" />
                             City-Wide
@@ -70,10 +69,9 @@
                         </div>
                     </div>
 
-                    <q-separator />
 
                     <!-- per office -->
-                    <div class="q-pa-lg">
+                    <div class="rc-block">
                         <div class="da-section-title">
                             <q-icon name="bi-diagram-3" size="1.1em" class="q-mr-sm" />
                             Per Office
@@ -117,10 +115,9 @@
                         </q-expansion-item>
                     </div>
 
-                    <q-separator />
 
                     <!-- data reviewed -->
-                    <div class="q-pa-lg">
+                    <div class="rc-block">
                         <q-expansion-item
                             icon="bi-table"
                             label="Data reviewed"
@@ -131,12 +128,12 @@
                         </q-expansion-item>
                     </div>
 
-                    <div class="da-disclaimer q-px-lg q-pb-lg">
+                    <div class="da-disclaimer">
                         <q-icon name="bi-info-circle" size="xs" class="q-mr-xs" />
                         AI-generated from this window's figures only. Treat it as a starting point for review, not a directive.
                     </div>
                 </template>
-            </div>
+            </q-card-section>
         </q-card>
     </q-dialog>
 </template>
@@ -197,25 +194,6 @@ const onShow = () => {
 </script>
 
 <style scoped>
-.da-card {
-    width: 900px;
-    max-width: 96vw;
-    height: 100%;
-}
-.da-header {
-    flex-shrink: 0;
-}
-.da-eyebrow {
-    font-size: 10.5px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: #DB812C;
-    font-weight: 700;
-}
-.da-body {
-    overflow-y: auto;
-    min-height: 0;
-}
 .da-section-title {
     font-size: 14px;
     font-weight: 800;

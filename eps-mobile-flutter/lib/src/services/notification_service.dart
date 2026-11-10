@@ -14,9 +14,7 @@ class NotificationService {
       '/notification',
       query: {'limit': limit},
     );
-    return asMapList(res.data?['data'])
-        .map(AppNotification.fromJson)
-        .toList();
+    return asMapList(res.data?['data']).map(AppNotification.fromJson).toList();
   }
 
   /// `POST /notification/read` — mark all as read (HTTP fallback for the socket

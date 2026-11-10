@@ -25,15 +25,18 @@ class PollService {
     return Poll.fromJson(asMap(res.data?['data']));
   }
 
-  /// `POST /poll/:id/vote` → the updated poll (with results).
-  Future<Poll> vote(
+  /// `POST /poll/:id/vote` with one entry per question → the updated survey (with results).
+  Future<Poll> answer(
     int id, {
-    required int optionId,
+    required List<PollAnswer> answers,
     required String guestToken,
   }) async {
     final res = await _api.post<Map<String, dynamic>>(
       '/poll/$id/vote',
-      body: {'optionId': optionId, 'guestToken': guestToken},
+      body: {
+        'answers': answers.map((a) => a.toJson()).toList(),
+        'guestToken': guestToken,
+      },
     );
     return Poll.fromJson(asMap(res.data?['data']));
   }

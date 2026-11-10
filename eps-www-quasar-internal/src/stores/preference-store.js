@@ -10,6 +10,8 @@ export const usePreferenceStore = defineStore('preferenceStore', {
     isLoadingTable: false,
     office: null,
     holiday: null,
+    canned: null,
+    client: null,
     user: null,
   }),
 

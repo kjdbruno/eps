@@ -61,15 +61,28 @@ module.exports = (sequelize, DataTypes) => { // <--- THIS IS THE REQUIRED FUNCTI
       type: DataTypes.DATE,
       allowNull: true
     },
-    // ARTA/EODB complexity tiering, set by the AI at auto-assignment time. Drives
-    // resolutionDeadline (see utils/businessHours.js) — the single standard every office is held
-    // to; there's no separate per-office SLA figure anywhere in this app.
+    // Legacy complexity tier — no longer set or read: every feedback now has the same fixed
+    // timeline (see utils/businessHours.js). The column is kept so old rows stay readable.
     complexity: {
       type: DataTypes.ENUM('simple', 'complex', 'highly_technical'),
       allowNull: true
     },
     resolutionDeadline: {
       type: DataTypes.DATE,
+      allowNull: true
+    },
+    // The one-time 3-day extension an office can ask for (see ComplaintController.requestExtension):
+    // when it was granted, why, and by whom. resolutionDeadline above already includes it.
+    extensionGrantedAt: {
+      type: DataTypes.DATE,
+      allowNull: true
+    },
+    extensionReason: {
+      type: DataTypes.TEXT,
+      allowNull: true
+    },
+    extensionRequestedBy: {
+      type: DataTypes.INTEGER,
       allowNull: true
     },
     // Supervisor's remarks from the completion/cancellation that finalized (or last attempted
@@ -85,6 +98,19 @@ module.exports = (sequelize, DataTypes) => { // <--- THIS IS THE REQUIRED FUNCTI
       allowNull: true
     },
     suggestedRemarksAt: {
+      type: DataTypes.DATE,
+      allowNull: true
+    },
+    // how the text reads (positive / neutral / negative), as an AI model judged it when it was filed (utils/sentiment.js)
+    sentiment: {
+      type: DataTypes.ENUM('positive', 'neutral', 'negative'),
+      allowNull: true
+    },
+    sentimentReason: {
+      type: DataTypes.STRING(300),
+      allowNull: true
+    },
+    sentimentAt: {
       type: DataTypes.DATE,
       allowNull: true
     },

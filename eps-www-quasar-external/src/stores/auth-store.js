@@ -251,9 +251,17 @@ export const useAuthStore = defineStore('auth', {
                 this.isAuthenticated = true;
                 return true;
             } catch (error) {
-                console.error('JWT validation failed on client startup or explicit check:', error);
-                this.clearAuthData(); // Interceptor also does this, but good to ensure
-                return false;
+                const status = error.response?.status;
+                if (status === 401 || status === 403) {
+                    console.error('JWT validation failed on client startup or explicit check:', error);
+                    this.clearAuthData(); // Interceptor also does this, but good to ensure
+                    return false;
+                }
+                // The server could not be reached (or failed): that does not say the session is over, so it is kept and the page
+                // shows its own error, instead of signing the person out because of a network blip.
+                console.warn('Could not check the session, keeping it:', error.message);
+                this.isAuthenticated = true;
+                return true;
             }
         },
         async readNotification() {

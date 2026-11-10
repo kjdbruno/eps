@@ -61,8 +61,8 @@ export default defineConfig((/* ctx */) => {
       // `${process.env.VUE_APP_BACKEND_URL}/api` into a URL axios can't resolve, so every request
       // silently falls back to this app's OWN origin instead of the real backend.
       env: {
-        VUE_APP_API_KEY: JSON.stringify('7fcb21ea7e5b4a2dbe30cb18730aeaf5d5e5c7ce45f962376355c1c4f07c8362'),
-        VUE_APP_BACKEND_URL: 'http://192.168.200.205:1000',
+        VUE_APP_API_KEY: JSON.stringify(process.env.EPS_API_KEY || '7fcb21ea7e5b4a2dbe30cb18730aeaf5d5e5c7ce45f962376355c1c4f07c8362'),
+        VUE_APP_BACKEND_URL: process.env.EPS_BACKEND_URL || 'http://192.168.200.205:1000',
         // VUE_APP_BACKEND_URL: 'http://localhost:1000',
       },
 
@@ -75,7 +75,8 @@ export default defineConfig((/* ctx */) => {
       // ignorePublicFolder: true,
       // minify: false,
       // polyfillModulePreload: true,
-      // distDir
+      // Where a release build is written (see build-release.mjs): with it set, the build goes there and not into dist/spa.
+      ...(process.env.EPS_DIST_DIR ? { distDir: process.env.EPS_DIST_DIR } : {}),
 
       // extendViteConf (viteConf) {},
       // viteVuePluginOptions: {},
@@ -88,7 +89,7 @@ export default defineConfig((/* ctx */) => {
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#devserver
     devServer: {
       // https: true,
-      open: true // opens browser window automatically
+      open: !process.env.NO_BROWSER_OPEN // opens browser window automatically (set NO_BROWSER_OPEN=1 to skip, e.g. under pm2)
     },
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#framework

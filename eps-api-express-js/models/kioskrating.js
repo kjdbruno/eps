@@ -113,6 +113,19 @@ module.exports = (sequelize, DataTypes) => { // <--- THIS IS THE REQUIRED FUNCTI
       type: DataTypes.BOOLEAN,
       defaultValue: true
     },
+    // how the text reads (positive / neutral / negative), as an AI model judged it when it was filed (utils/sentiment.js)
+    sentiment: {
+      type: DataTypes.ENUM('positive', 'neutral', 'negative'),
+      allowNull: true
+    },
+    sentimentReason: {
+      type: DataTypes.STRING(300),
+      allowNull: true
+    },
+    sentimentAt: {
+      type: DataTypes.DATE,
+      allowNull: true
+    },
     entryFrom: {
       type: DataTypes.ENUM('kiosk', 'manual'),
       allowNull: false

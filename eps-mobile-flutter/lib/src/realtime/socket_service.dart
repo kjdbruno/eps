@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:socket_io_client/socket_io_client.dart' as io;
 
 import '../config/app_config.dart';
@@ -12,6 +14,13 @@ class SocketService {
 
   void Function(int count, List<AppNotification> items)? onNotifications;
   void Function(String reason)? onForceLogout;
+
+  final _changes = StreamController<String>.broadcast();
+
+  /// The module whose data just changed ('discussion', 'poll', 'complaint'...), or '*' after the connection came
+  /// back (anything may have changed meanwhile). The message carries no data: a screen that shows that module
+  /// simply loads it again.
+  Stream<String> get changes => _changes.stream;
 
   bool get isConnected => _socket?.connected ?? false;
 
@@ -51,6 +60,14 @@ class SocketService {
       }
       onNotifications?.call(count, items);
     });
+
+    socket.on('data:changed', (data) {
+      final module = data is Map ? data['module']?.toString() : null;
+      if (module != null && module.isNotEmpty) _changes.add(module);
+    });
+    // feedback has always had its own event
+    socket.on('complaints:changed', (_) => _changes.add('complaint'));
+    socket.onReconnect((_) => _changes.add('*'));
 
     socket.on('force_logout', (data) {
       final reason =

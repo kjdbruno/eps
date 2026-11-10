@@ -874,6 +874,30 @@ exports.exportPdf = async (req, res) => {
 // other admin module: Discussion, Poll, Office, User, Holiday, manual Feedback entries). Neither
 // table is large enough per year to need real pagination yet, so both are simply queried, tagged
 // with a common shape, merged, and sorted newest-first here.
+// The history of ONE record of a Preference (an account, an office, a holiday, a canned message, a client, a discussion, a survey): the activity log lines
+// about it, newest first. It is the trail panel of that record's dialog. The User preference is super-only, so its history is too.
+const RECORD_MODULES = ['user', 'office', 'holiday', 'canned', 'client', 'discussion', 'poll'];
+exports.getRecordHistory = async (req, res) => {
+    const module = String(req.query.module || '');
+    const entityId = parseInt(req.query.entityId, 10);
+    if (!RECORD_MODULES.includes(module) || !entityId) return res.status(400).json({ message: 'A module and a record are needed.' });
+    if (!['super', 'admin'].includes(req.role) || (module === 'user' && req.role !== 'super')) {
+        return res.status(403).json({ message: 'You do not have access to this history.' });
+    }
+    try {
+        const rows = await ActivityLog.findAll({
+            where: { module, entityId },
+            attributes: ['id', 'action', 'actorLabel', 'description', 'createdAt'],
+            order: [['createdAt', 'DESC']],
+            limit: 30,
+        });
+        return res.json({ data: rows });
+    } catch (error) {
+        console.error('Error fetching the history of a record:', error);
+        return res.status(500).json({ message: 'Server error.', error: error.message });
+    }
+};
+
 exports.getActivityLog = async (req, res) => {
     if (!['super', 'admin', 'monitoring'].includes(req.role)) {
         return res.status(403).json({ message: 'You do not have access to this report.' });

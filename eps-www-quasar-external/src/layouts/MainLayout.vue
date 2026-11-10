@@ -8,10 +8,8 @@
             <q-page v-if="route.path === '/home'">
                 <router-view />
             </q-page>
-            <q-page v-else class="q-py-xl q-px-md">
-                <div class="wide-shell">
-                    <router-view />
-                </div>
+            <q-page v-else class="pt-page">
+                <router-view />
             </q-page>
         </q-page-container>
         <SiteFooter />
@@ -25,10 +23,3 @@ import SiteFooter from 'src/components/SiteFooter.vue';
 
 const route = useRoute();
 </script>
-
-<style scoped>
-.wide-shell {
-    max-width: 1100px;
-    margin: 0 auto;
-}
-</style>

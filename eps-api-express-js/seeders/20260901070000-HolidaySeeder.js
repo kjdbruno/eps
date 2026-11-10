@@ -1,9 +1,13 @@
 'use strict';
 
 // Starter holiday calendar (2026 Philippine regular + special non-working days) so the
-// 24-business-hour office acknowledgement SLA (see utils/businessHours.js) has something to
+// office acknowledgement deadline (see utils/businessHours.js) has something to
 // exclude out of the box. Edit anytime via Preference > Holiday in the internal app — dates
 // shift year to year (esp. movable feasts), this is just a reasonable starting point.
+// category: regular holiday, special non-working day (special), special working day (working) or a day of the city (local)
+const SPECIAL = ['Chinese New Year', 'Black Saturday', 'Ninoy Aquino Day', "All Saints' Day", 'Feast of the Immaculate Conception', 'Christmas Eve', "New Year's Eve"];
+const WORKING = ['EDSA People Power Anniversary'];
+const categoryOf = (name) => (SPECIAL.includes(name) ? 'special' : (WORKING.includes(name) ? 'working' : 'regular'));
 const HOLIDAYS = [
   { date: '2026-01-01', name: "New Year's Day" },
   { date: '2026-02-17', name: 'Chinese New Year' },
@@ -30,7 +34,7 @@ module.exports = {
     const now = new Date();
     await queryInterface.bulkInsert(
       'holidays',
-      HOLIDAYS.map(h => ({ ...h, isActive: true, createdAt: now, updatedAt: now }))
+      HOLIDAYS.map(h => ({ ...h, category: categoryOf(h.name), isActive: true, createdAt: now, updatedAt: now }))
     );
   },
 

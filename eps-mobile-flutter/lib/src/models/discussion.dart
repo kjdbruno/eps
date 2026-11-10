@@ -50,7 +50,10 @@ class Discussion {
       id: asInt(json['id']),
       title: asString(json['title']),
       description: asString(json['description']),
-      status: asString(json['status'], fallback: 'open'),
+      // a discussion past its end date is still 'open' on the server but takes no new comments
+      status: asBool(json['isExpired'])
+          ? 'closed'
+          : asString(json['status'], fallback: 'open'),
       createdAt: asDate(json['createdAt']),
       commentCount: json.containsKey('commentCount')
           ? asInt(json['commentCount'])

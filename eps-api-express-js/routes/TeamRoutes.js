@@ -7,7 +7,7 @@ module.exports = (TeamController) => {
 
     // Read-only roster — any authenticated staff role. Distinct from Preference > User (super-only
     // CRUD, see UserRoutes.js); this just powers the Dashboard's "who's online" panel.
-    router.get('/directory', verifyToken, TeamController.getDirectory);
+    router.get('/directory', verifyToken, requireRole('super', 'admin', 'workstation', 'monitoring'), TeamController.getDirectory);
 
     // Force-logout is deliberately super-only, not admin — the one action on this panel with a
     // real, immediate, no-undo effect on another account.

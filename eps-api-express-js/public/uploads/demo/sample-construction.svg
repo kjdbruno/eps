@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
+<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9CC9F5"/><stop offset="1" stop-color="#E6F2FC"/></linearGradient></defs>
+<rect width="800" height="600" fill="url(#sky)"/>
+<rect x="20" y="170" width="120" height="130" fill="#C9D6E6"/><rect x="150" y="120" width="150" height="180" fill="#B7C7DB"/><rect x="310" y="190" width="110" height="110" fill="#D5DFEC"/><rect x="430" y="140" width="160" height="160" fill="#BDCBDD"/><rect x="600" y="180" width="170" height="120" fill="#CBD7E7"/>
+<rect y="300" width="800" height="300" fill="#8D9097"/>
+<rect y="300" width="800" height="22" fill="#B6B9BF"/>
+<rect y="450" width="800" height="150" fill="#4A4F57"/>
+<g><g transform="translate(120 360)"><rect width="110" height="26" rx="4" fill="#F2A33A"/><path d="M0 26 l14 -26 h14 l-14 26z M44 26 l14 -26 h14 l-14 26z M88 26 l14 -26 h10 l-14 26z" fill="#2B2B2B"/><rect x="10" y="26" width="8" height="46" fill="#6B6F76"/><rect x="92" y="26" width="8" height="46" fill="#6B6F76"/></g><g transform="translate(250 360)"><rect width="110" height="26" rx="4" fill="#F2A33A"/><path d="M0 26 l14 -26 h14 l-14 26z M44 26 l14 -26 h14 l-14 26z M88 26 l14 -26 h10 l-14 26z" fill="#2B2B2B"/><rect x="10" y="26" width="8" height="46" fill="#6B6F76"/><rect x="92" y="26" width="8" height="46" fill="#6B6F76"/></g><g transform="translate(380 360)"><rect width="110" height="26" rx="4" fill="#F2A33A"/><path d="M0 26 l14 -26 h14 l-14 26z M44 26 l14 -26 h14 l-14 26z M88 26 l14 -26 h10 l-14 26z" fill="#2B2B2B"/><rect x="10" y="26" width="8" height="46" fill="#6B6F76"/><rect x="92" y="26" width="8" height="46" fill="#6B6F76"/></g><g transform="translate(510 360)"><rect width="110" height="26" rx="4" fill="#F2A33A"/><path d="M0 26 l14 -26 h14 l-14 26z M44 26 l14 -26 h14 l-14 26z M88 26 l14 -26 h10 l-14 26z" fill="#2B2B2B"/><rect x="10" y="26" width="8" height="46" fill="#6B6F76"/><rect x="92" y="26" width="8" height="46" fill="#6B6F76"/></g></g>
+<rect x="90" y="250" width="620" height="60" fill="#B7C0CC" opacity=".6"/>
+<rect x="18" y="552" width="150" height="30" rx="8" fill="rgba(0,0,0,.45)"/>
+<text x="93" y="572" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#fff" text-anchor="middle">BLOCKED SIDEWALK</text>
+</svg>

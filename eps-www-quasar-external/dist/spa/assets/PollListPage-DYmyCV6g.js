@@ -1,0 +1,1 @@
+import{A as e,h as t,l as n,z as r}from"./runtime-core.esm-bundler-DYtyFWwP.js";import{t as i}from"./AuthShell-DOrouCk8.js";import a from"./PollList-_VNmH6pE.js";var o={__name:`PollListPage`,setup(o){return(o,s)=>(e(),n(i,null,{default:r(()=>[t(a)]),_:1}))}};export{o as default};

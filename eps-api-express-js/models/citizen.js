@@ -65,6 +65,12 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DATE,
       allowNull: true
     },
+    // where the account came from: 'legacy' = seeded from the previous system (the Client accounts page only sends those
+    // their details); null = the person registered themselves
+    origin: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
   }, {
     sequelize,
     modelName: 'Citizen',

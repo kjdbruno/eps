@@ -9,8 +9,9 @@ const routes = [
   { path: '/register', component: () => import('src/pages/RegisterPage.vue'), name: 'register' },
   { path: '/verify-email', component: () => import('src/pages/VerifyEmailPage.vue'), name: 'verify-email' },
   { path: '/forgot-password', component: () => import('src/pages/ForgotPasswordPage.vue'), name: 'forgot-password' },
+  // the first login of an account that still has the temporary password it was emailed
+  { path: '/change-password', component: () => import('src/pages/ChangePasswordPage.vue'), name: 'change-password' },
   { path: '/verify-complaint', component: () => import('src/pages/VerifyComplaintPage.vue'), name: 'verify-complaint' },
-  { path: '/track', component: () => import('src/pages/TrackPage.vue'), name: 'track' },
   { path: '/file-complaint', component: () => import('src/pages/FileComplaintPage.vue'), name: 'file-complaint' },
   // Discussion/poll are usable with no account — these guest-facing routes redirect to their
   // /home equivalent when already authenticated (see router/index.js), same as /file-complaint.

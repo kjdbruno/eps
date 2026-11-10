@@ -7,5 +7,6 @@ const NotificationController = require('../controllers/NotificationController');
 // Notifications are per-account, so they need a real token (not just the API key).
 router.get('/', validateApiKey, verifyToken, NotificationController.list);
 router.post('/read', validateApiKey, verifyToken, NotificationController.markAllRead);
+router.post('/:id/read', validateApiKey, verifyToken, NotificationController.markRead);
 
 module.exports = router;

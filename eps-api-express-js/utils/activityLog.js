@@ -1,5 +1,6 @@
 const { ActivityLog } = require('../models');
 const { resolveActorLabel } = require('./complaintHistory');
+const { emitChanged } = require('./realtime');
 
 // One line in the Report page's Activity Log tab. Best-effort, same as complaintHistory's
 // logHistory: the action being logged has already succeeded by the time this runs, so a logging
@@ -23,6 +24,9 @@ const logActivity = async ({ module, entityId, action, actorId, actorRole, descr
             actorLabel,
             description
         });
+        // every logged action (a discussion or poll opened, closed, reassigned, a CSM report recorded, an office or
+        // user changed...) changes what some open screen is showing
+        emitChanged(module, action);
     } catch (error) {
         console.error(`Failed to log activity (${module}.${action}):`, error);
     }

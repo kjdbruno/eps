@@ -1,7 +1,9 @@
 import { boot } from 'quasar/wrappers';
 import { io } from 'socket.io-client';
 import { useAuthStore } from 'src/stores/auth-store';
-import { Toast } from 'src/boot/sweetalert'; 
+import { Toast } from 'src/boot/sweetalert';
+import { showDesktopNotification } from 'src/utils/desktopNotify';
+import { NotificationLink } from 'src/utils/notification';
 
 // Create a global Socket.IO instance
 const socket = io(process.env.VUE_APP_BACKEND_URL, {
@@ -60,6 +62,9 @@ export default boot(({ app, router }) => {
         // time. Comparing against the count already in the store (still the OLD value here, one
         // line above where it gets overwritten) means the toast only fires on a genuine increase.
         const isNewArrival = notificationCount > authStore.notificationCount;
+        // which of these were not in the list a moment ago (the ones to tell the desktop about)
+        const knownIds = new Set((authStore.notificationList || []).map(n => n.id));
+        const fresh = (notifications || []).filter(n => !knownIds.has(n.id) && !n.isRead);
         authStore.notificationCount = notificationCount;
         authStore.notificationList = notifications;
         console.log(`notifications loaded:`, notifications);
@@ -73,6 +78,18 @@ export default boot(({ app, router }) => {
             });
         }
         authStore.hasNotifications = notificationCount > 0;
+
+        // A card from the operating system too, when this window is not the one in front. Several at
+        // once collapse into one, so a burst never floods the corner of the screen.
+        if (isNewArrival && fresh.length) {
+            const latest = fresh[0];
+            showDesktopNotification({
+                title: fresh.length > 1 ? `${fresh.length} new notifications` : 'eParticipation System',
+                body: fresh.length > 1 ? fresh.slice(0, 3).map(n => `• ${n.content}`).join('\n') : latest.content,
+                tag: 'eps-notification',
+                onClick: () => { const to = NotificationLink(latest); router.push(to || '/home'); },
+            });
+        }
     });
 
     // Handle re-authentication on reconnection

@@ -1,5 +1,6 @@
 const { Op } = require("sequelize");
 const { KioskRating, Rating, Office } = require('../models');
+const { tagReport } = require('../utils/sentiment');
 let io; // Declare io variable
 
 module.exports = (_io) => {
@@ -72,6 +73,7 @@ module.exports = (_io) => {
 
                 // io.emit('assessmentCreated', { message: "assessment created successfully.", queue, assessment, item, payor });
                 
+                tagReport(kiosk.id); // read in the background
                 res.status(201).json({ message: "Rating Created Successfully.", kiosk, rating });
 
             } catch (error) {

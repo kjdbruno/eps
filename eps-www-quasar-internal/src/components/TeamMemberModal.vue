@@ -1,152 +1,99 @@
 <template>
-    <q-dialog :model-value="modelValue" @update:model-value="$emit('update:modelValue', $event)" position="right" full-height @hide="onHide" class="message-modal">
+    <q-dialog :model-value="modelValue" @update:model-value="$emit('update:modelValue', $event)" position="right" full-height class="message-modal">
         <q-card square class="tm-card column no-wrap">
-            <!-- Account info header -->
+            <!-- who it is -->
             <div class="row items-center no-wrap q-pa-md">
-                <q-avatar size="48px" class="tm-avatar">
-                    <img v-if="member?.avatar" :src="formatAvatar(member)" />
-                    <q-icon v-else name="bi-person-fill" color="white" />
-                </q-avatar>
-                <div class="q-ml-md col">
-                    <div class="text-subtitle1 text-weight-bold text-capitalize">{{ member?.firstname }} {{ member?.lastname }}</div>
+                <PersonAvatar :user="member || {}" :size="52" :online="!!member?.isOnline" />
+                <div class="q-ml-md col" style="min-width: 0;">
+                    <div class="text-subtitle1 text-weight-bold text-capitalize ellipsis">{{ member?.firstname }} {{ member?.lastname }}</div>
                     <div class="text-caption text-grey text-capitalize">
                         {{ ROLE_LABELS[member?.role] || member?.role }}<template v-if="member?.office"> &middot; {{ member.office }}</template>
                     </div>
-                    <div class="q-mt-xs">
-                        <q-btn
-                            v-if="isSuper"
-                            rounded size="xs" unelevated no-caps color="negative" label="force logout"
-                            :loading="forceLogoutLoading" @click="confirmForceLogout"
-                        />
-                    </div>
                 </div>
-                <q-badge :color="member?.isOnline ? 'positive' : 'grey'" outline rounded class="text-uppercase q-mr-sm">
-                    {{ member?.isOnline ? 'online' : 'offline' }}
-                </q-badge>
                 <q-btn icon="bi-x-circle" flat round dense v-close-popup />
             </div>
+            <div class="tm-badges q-px-md q-pb-md">
+                <span class="rc-pill" :class="member?.isOnline ? 'rc-pill--ok' : 'rc-pill--off'">{{ member?.isOnline ? 'online' : 'offline' }}</span>
+                <span class="rc-pill" :class="member?.isActive === false ? 'rc-pill--bad' : 'rc-pill--info'">{{ member?.isActive === false ? 'inactive' : 'active' }}</span>
+            </div>
             <q-separator />
 
-            <!-- Messaging thread -->
-            <div class="tm-chat-body col" ref="chatBodyRef">
-                <div v-if="loadingMessages" class="text-center q-pa-lg">
-                    <q-spinner-ios size="1.5em" />
+            <!-- the details of the account -->
+            <div class="tm-body col">
+                <div class="rc-block-title q-mb-sm">the account</div>
+                <div class="rc-facts">
+                    <div v-for="row in facts" :key="row.label" class="rc-fact">
+                        <span class="rc-ico" :class="`rc-ico--${row.tone}`"><q-icon :name="row.icon" size="16px" /></span>
+                        <span class="rc-fact-text"><span class="rc-fact-label">{{ row.label }}</span><span class="rc-fact-value">{{ row.value }}</span></span>
+                    </div>
                 </div>
-                <template v-else>
-                    <div v-if="!messages.length" class="text-center text-caption text-grey q-pa-lg">
-                        No messages yet — say hello.
-                    </div>
-                    <div v-for="m in messages" :key="m.id" class="tm-bubble-row" :class="isMine(m) ? 'tm-bubble-row--mine' : ''">
-                        <div class="tm-bubble" :class="isMine(m) ? 'tm-bubble--mine' : 'tm-bubble--theirs'">
-                            <div>{{ m.content }}</div>
-                            <div class="tm-bubble-time">{{ formatTime(m.createdAt) }}</div>
-                        </div>
-                    </div>
-                </template>
             </div>
 
+            <!-- what can be done: the same cards as every Manage page -->
             <q-separator />
-            <q-card-actions class="q-py-md">
-                <q-input
-                    outlined dense v-model="draft" placeholder="Type a message..." class="col"
-                    @keyup.enter="send"
-                />
-                <q-btn flat unelevated color="primary" icon="bi-send" :disable="!draft.trim()" :loading="sending" @click="send" />
-            </q-card-actions>
+            <div class="tm-actions q-pa-md">
+                <ManageActions :title="`What would you like to do with ${member?.firstname || 'them'}?`" :actions="actions" @pick="onPick" />
+            </div>
         </q-card>
     </q-dialog>
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
+import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import moment from 'moment';
 import { api } from 'src/boot/axios';
-import { socket } from 'src/boot/socket';
 import { useAuthStore } from 'src/stores/auth-store';
 import { Toast } from 'src/boot/sweetalert';
 import Swal from 'sweetalert2/dist/sweetalert2.js';
+import PersonAvatar from 'src/components/PersonAvatar.vue';
+import ManageActions from 'src/components/ManageActions.vue';
+import { esc } from 'src/utils/escape';
 
+// The side panel of one person in the Team list (Home): who they are, the details of their account, a button to the Messages
+// page for talking to them, and, for a super admin, force logout. The conversation itself lives on the Messages page.
 const props = defineProps({
     modelValue: { type: Boolean, default: false },
     member: { type: Object, default: null },
 });
 const emit = defineEmits(['update:modelValue', 'force-logout']);
 
+const router = useRouter();
 const AuthStore = useAuthStore();
 const ROLE_LABELS = { super: 'Super Admin', admin: 'Admin', workstation: 'Workstation Staff', monitoring: 'Monitoring' };
 const isSuper = computed(() => AuthStore.user?.role === 'super');
 
-const formatAvatar = (u) => `${process.env.VUE_APP_BACKEND_URL}${u.avatar || ''}`;
-const formatTime = (timestamp) => moment(timestamp).format('MMM DD, hh:mm A');
-const isMine = (m) => m.senderId === AuthStore.user?.id;
-
-/* -------------------- messaging -------------------- */
-
-const messages = ref([]);
-const loadingMessages = ref(false);
-const draft = ref('');
-const sending = ref(false);
-const chatBodyRef = ref(null);
-
-const scrollToBottom = async () => {
-    await nextTick();
-    if (chatBodyRef.value) chatBodyRef.value.scrollTop = chatBodyRef.value.scrollHeight;
-};
-
-const loadConversation = async () => {
-    if (!props.member?.id) return;
-    loadingMessages.value = true;
-    messages.value = [];
-    try {
-        const { data } = await api.get(`/messages/${props.member.id}`);
-        messages.value = data.data || [];
-        scrollToBottom();
-    } catch (error) {
-        console.error('Error loading conversation:', error);
-    } finally {
-        loadingMessages.value = false;
-    }
-};
-
-const send = async () => {
-    const content = draft.value.trim();
-    if (!content || !props.member?.id) return;
-    sending.value = true;
-    try {
-        const { data } = await api.post('/messages', { receiverId: props.member.id, content });
-        messages.value.push(data.data);
-        draft.value = '';
-        scrollToBottom();
-    } catch (error) {
-        console.error('Error sending message:', error);
-        Toast.fire({ icon: 'error', html: `<div class="text-caption">Unable to send that message.</div>` });
-    } finally {
-        sending.value = false;
-    }
-};
-
-// Appends a live-pushed message to the thread ONLY when it's from whoever this panel currently
-// has open — a message from anyone else still lands (see NotificationController/the bell icon),
-// just not into this specific open thread.
-const onIncomingMessage = (message) => {
-    if (!props.member?.id || message.senderId !== props.member.id) return;
-    messages.value.push(message);
-    scrollToBottom();
-};
-
-onMounted(() => {
-    socket.on('message:new', onIncomingMessage);
-});
-onUnmounted(() => {
-    socket.off('message:new', onIncomingMessage);
+const when = (v) => (v ? `${moment(v).format('MMM DD, YYYY hh:mm A')} (${moment(v).fromNow()})` : 'Never');
+const facts = computed(() => {
+    const m = props.member;
+    if (!m) return [];
+    return [
+        { label: 'Username', value: m.username || '—', icon: 'bi-at', tone: 'teal' },
+        { label: 'Contact number', value: m.phoneNo || 'Not on record', icon: 'bi-telephone', tone: 'blue' },
+        { label: 'Role', value: ROLE_LABELS[m.role] || m.role || '—', icon: 'bi-shield-check', tone: 'purple' },
+        { label: 'Office', value: m.office || 'No office', icon: 'bi-building', tone: 'red' },
+        { label: 'Last signed in', value: when(m.lastLoginAt), icon: 'bi-box-arrow-in-right', tone: 'amber' },
+        { label: 'In the system since', value: m.createdAt ? moment(m.createdAt).format('MMM DD, YYYY') : '—', icon: 'bi-calendar-check', tone: 'teal' },
+    ];
 });
 
-watch(() => props.member?.id, (id) => {
-    if (id) loadConversation();
-});
+// Messages, and for a super admin Force logout, as cards (the Manage design)
+const actions = computed(() => [
+    {
+        key: 'messages', label: 'Message them', icon: 'bi-chat-dots', bg: '#E4F6EA', color: '#1C8A3B',
+        hint: props.member?.unreadCount ? `Open the conversation: ${props.member.unreadCount} unread.` : 'Open the conversation on the Messages page.',
+    },
+    ...(isSuper.value ? [{
+        key: 'logout', label: 'Force logout', icon: 'bi-box-arrow-right', bg: '#FFF4DB', color: '#8A5B00',
+        hint: 'Sign them out everywhere at once. They can sign in again.',
+        disabled: !props.member?.isOnline || forceLogoutLoading.value, disabledHint: forceLogoutLoading.value ? 'Signing them out...' : 'They are not signed in right now.',
+    }] : []),
+]);
+const onPick = (key) => { if (key === 'messages') openMessages(); else if (key === 'logout') confirmForceLogout(); };
 
-const onHide = () => {
-    draft.value = '';
+const openMessages = () => {
+    emit('update:modelValue', false);
+    router.push({ name: 'message', query: { user: props.member.id } });
 };
 
 /* -------------------- force logout -------------------- */
@@ -156,7 +103,7 @@ const forceLogoutLoading = ref(false);
 const confirmForceLogout = async () => {
     const result = await Swal.fire({
         title: 'Confirm',
-        html: `Force-logout <b class="text-capitalize">${props.member?.firstname} ${props.member?.lastname}</b>? They'll be signed out everywhere immediately.`,
+        html: `Force-logout <b class="text-capitalize">${esc(props.member?.firstname)} ${esc(props.member?.lastname)}</b>? They'll be signed out everywhere immediately.`,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonText: 'confirm',
@@ -191,51 +138,13 @@ const confirmForceLogout = async () => {
 
 <style scoped>
 /* position="right" + full-height gives an edge-docked panel already — this just fixes its width
-   and strips the default QCard padding the header/chat/compose sections manage on their own. */
+   and strips the default QCard padding the sections manage on their own. */
 .tm-card {
-    width: 420px;
+    width: 400px;
     max-width: 100vw;
     height: 100vh;
     padding: 0;
 }
-.tm-avatar {
-    background: var(--q-primary);
-}
-.tm-chat-body {
-    overflow-y: auto;
-    padding: 16px;
-    background: #F6F9FC;
-    min-height: 0;
-}
-.tm-bubble-row {
-    display: flex;
-    margin-bottom: 10px;
-}
-.tm-bubble-row--mine {
-    justify-content: flex-end;
-}
-.tm-bubble {
-    max-width: 78%;
-    padding: 8px 12px;
-    border-radius: 14px;
-    font-size: 13px;
-    line-height: 1.4;
-    word-break: break-word;
-}
-.tm-bubble--theirs {
-    background: #FFFFFF;
-    border: 1px solid #DCE4F0;
-    border-bottom-left-radius: 4px;
-}
-.tm-bubble--mine {
-    background: var(--q-primary);
-    color: #FFFFFF;
-    border-bottom-right-radius: 4px;
-}
-.tm-bubble-time {
-    font-size: 10px;
-    opacity: 0.65;
-    margin-top: 2px;
-    text-align: right;
-}
+.tm-badges { display: flex; gap: 6px; }
+.tm-body { overflow-y: auto; padding: 16px; min-height: 0; }
 </style>

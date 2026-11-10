@@ -5,11 +5,23 @@ const multer = require('multer');
 const sharp = require('sharp');
 const { Office } = require('../models');
 const { logActivity } = require('../utils/activityLog');
+const { buildOfficeProfile } = require('../utils/officeProfile');
 
 exports.getAllOffices = async (req, res) => {
     try {
         const offices = await Office.findAll();
         res.json(offices);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+// One office with everything on file: its staff, feedback, CSM reports, discussions and surveys (see utils/officeProfile.js)
+exports.getOfficeProfile = async (req, res) => {
+    try {
+        const profile = await buildOfficeProfile(parseInt(req.params.id, 10));
+        if (!profile) return res.status(404).json({ message: 'Office not found.' });
+        res.json(profile);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

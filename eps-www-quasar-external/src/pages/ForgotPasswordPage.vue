@@ -2,138 +2,92 @@
     <AuthShell
         title="Forgot Password"
         :subtitle="stepSubtitle"
-        max-width="1100px"
-        wide
+        auth
+        icon="bi-key"
+        headline="Get back into your account"
+        lead="Reset your password with a one-time code sent to your email."
+        :steps="SIDE_STEPS"
     >
-        <div class="row q-col-gutter-xl">
-            <div class="col-12 col-md-7">
-                <q-card class="no-shadow custom-border radius-md q-pa-xl">
-                    <!-- Step 1: request a code. Always the same generic outcome regardless of
-                         whether the email is actually registered (see CitizenController.
-                         forgotPassword) — this page moves to step 2 either way, so there's nothing
-                         for a citizen to learn here about which emails have accounts. -->
-                    <template v-if="step === 'email'">
-                        <div class="q-mb-md">
-                            <div class="text-caption text-uppercase q-mb-xs" :class="RequestError ? 'text-negative' : 'text-grey'">email</div>
-                            <q-input outlined label="Enter Email" v-model="email" :error="!!RequestError" no-error-icon @keyup.enter="SubmitRequest()" />
-                        </div>
-                        <div class="text-negative text-caption q-mb-md" v-if="RequestError">{{ RequestError }}</div>
-                        <q-btn class="full-width" unelevated color="primary" size="lg" label="send reset code" @click="SubmitRequest()"/>
-                        <q-inner-loading :showing="RequestLoading">
-                            <q-spinner-ios color="primary" size="md"/>
-                            <div class="text-caption text-uppercase text-grey">we're working on it</div>
-                        </q-inner-loading>
-                    </template>
+        <!-- where you are: email -> code -> new password -->
+        <div class="lgn-dots">
+            <span :class="{ on: true }" /><span :class="{ on: step !== 'email' }" /><span :class="{ on: step === 'reset' }" />
+        </div>
 
-                    <!-- Step 2: just the code — verified on its own (see CitizenController.
-                         verifyResetCode) before asking for a new password, so a wrong/expired code
-                         is caught immediately instead of only at the very last step. -->
-                    <template v-else-if="step === 'code'">
-                        <div class="row justify-center q-gutter-sm q-mb-lg">
-                            <q-input
-                                v-for="(digit, index) in resetOtp.code.value"
-                                :key="index"
-                                :ref="el => { if (el) resetOtp.inputs.value[index] = el }"
-                                outlined
-                                maxlength="1"
-                                v-model="resetOtp.code.value[index]"
-                                input-class="otp-input"
-                                class="otp-box"
-                                @update:model-value="val => resetOtp.onInput(val, index)"
-                                @keydown.backspace="resetOtp.onBackspace(index)"
-                                @paste="resetOtp.onPaste"
-                            />
-                        </div>
-                        <div class="text-negative text-caption text-center q-mb-md" v-if="CodeError">{{ CodeError }}</div>
+        <!-- Step 1: request a code. Always the same generic outcome regardless of whether the email is
+             actually registered (see CitizenController.forgotPassword) — this page moves to step 2
+             either way, so there is nothing for a citizen to learn here about which emails have accounts. -->
+        <form v-if="step === 'email'" class="lgn-stack" @submit.prevent="SubmitRequest()">
+            <div class="lgn-alert lgn-alert--bad" v-if="RequestError"><q-icon name="bi-exclamation-circle" size="18px" /><div>{{ RequestError }}</div></div>
+            <q-input v-model="email" type="email" outlined rounded dense hide-bottom-space no-error-icon placeholder="Email address" :error="!!RequestError" autocomplete="email" autofocus>
+                <template #prepend><q-icon name="bi-envelope" size="18px" /></template>
+            </q-input>
+            <q-btn type="submit" unelevated rounded no-caps color="primary" label="Send reset code" class="lgn-btn full-width" :loading="RequestLoading" />
+        </form>
 
-                        <q-btn class="full-width q-mb-sm" unelevated color="primary" size="lg" label="verify code" @click="SubmitCode()"/>
-                        <q-btn class="full-width" flat color="primary" label="send another code" @click="SubmitRequest(true)"/>
-                        <q-inner-loading :showing="CodeLoading">
-                            <q-spinner-ios color="primary" size="md"/>
-                            <div class="text-caption text-uppercase text-grey">we're working on it</div>
-                        </q-inner-loading>
-                    </template>
+        <!-- Step 2: just the code — verified on its own (see CitizenController.verifyResetCode) before
+             asking for a new password, so a wrong or expired code is caught immediately. -->
+        <div v-else-if="step === 'code'" class="lgn-stack">
+            <div class="lgn-otp">
+            <q-input
+                v-for="(digit, index) in resetOtp.code.value"
+                :key="index"
+                :ref="el => { if (el) resetOtp.inputs.value[index] = el }"
+                outlined
+                maxlength="1"
+                v-model="resetOtp.code.value[index]"
+                input-class="otp-input"
+                class="otp-box"
+                @update:model-value="val => resetOtp.onInput(val, index)"
+                @keydown.backspace="resetOtp.onBackspace(index)"
+                @paste="resetOtp.onPaste"
+            />
+        </div>
+            <div class="lgn-alert lgn-alert--bad" v-if="CodeError"><q-icon name="bi-exclamation-circle" size="18px" /><div>{{ CodeError }}</div></div>
+            <q-btn unelevated rounded no-caps color="primary" label="Verify code" class="lgn-btn full-width" :loading="CodeLoading" @click="SubmitCode()" />
+            <q-btn flat rounded no-caps color="primary" label="Send another code" class="full-width" @click="SubmitRequest(true)" />
+        </div>
 
-                    <!-- Step 3: the code is already confirmed valid — just the new password now. -->
-                    <template v-else>
-                        <div class="q-mb-md">
-                            <div class="text-caption text-uppercase q-mb-xs text-grey">new password</div>
-                            <q-input
-                                outlined label="Enter New Password" v-model="newPassword"
-                                :type="showPassword ? 'text' : 'password'"
-                            >
-                                <template v-slot:append>
-                                    <q-icon :name="showPassword ? 'bi-eye-slash' : 'bi-eye'" class="cursor-pointer" size="xs" @click="showPassword = !showPassword" />
-                                </template>
-                            </q-input>
-                        </div>
-                        <div class="q-mb-md">
-                            <div class="text-caption text-uppercase q-mb-xs text-grey">confirm new password</div>
-                            <q-input
-                                outlined label="Confirm New Password" v-model="confirmPassword"
-                                :type="showPassword ? 'text' : 'password'"
-                                @keyup.enter="SubmitReset()"
-                            />
-                        </div>
-                        <div class="text-negative text-caption text-center q-mb-md" v-if="ResetError">{{ ResetError }}</div>
+        <!-- Step 3: the code is already confirmed valid — just the new password now. -->
+        <form v-else class="lgn-stack" @submit.prevent="SubmitReset()">
+            <div class="lgn-alert lgn-alert--bad" v-if="ResetError"><q-icon name="bi-exclamation-circle" size="18px" /><div>{{ ResetError }}</div></div>
+            <q-input v-model="newPassword" :type="showPassword ? 'text' : 'password'" outlined rounded dense hide-bottom-space no-error-icon placeholder="New password" autocomplete="new-password" autofocus>
+                <template #prepend><q-icon name="bi-lock" size="18px" /></template>
+                <template #append><q-icon :name="showPassword ? 'bi-eye' : 'bi-eye-slash'" size="18px" class="cursor-pointer" @click="showPassword = !showPassword" /></template>
+            </q-input>
+            <q-input v-model="confirmPassword" :type="showPassword ? 'text' : 'password'" outlined rounded dense hide-bottom-space no-error-icon placeholder="Confirm new password" autocomplete="new-password">
+                <template #prepend><q-icon name="bi-lock-fill" size="18px" /></template>
+            </q-input>
+            <div class="lgn-hint">Use at least 8 characters.</div>
+            <q-btn type="submit" unelevated rounded no-caps color="primary" label="Reset password" class="lgn-btn full-width" :loading="ResetLoading" />
+        </form>
 
-                        <q-btn class="full-width" unelevated color="primary" size="lg" label="reset password" @click="SubmitReset()"/>
+        <div class="lgn-help">
+            Remembered it?
+            <router-link class="lgn-link lgn-link--b" to="/login">Back to sign in</router-link>
+        </div>
 
-                        <q-inner-loading :showing="ResetLoading">
-                            <q-spinner-ios color="primary" size="md"/>
-                            <div class="text-caption text-uppercase text-grey">we're working on it</div>
-                        </q-inner-loading>
-                    </template>
-                </q-card>
-            </div>
-            <div class="col-12 col-md-5">
-                <q-card class="no-shadow bg-accent radius-md q-pa-xl q-mb-md">
-                    <div class="text-overline text-primary text-weight-bold q-mb-md">how this works</div>
-                    <q-list>
-                        <q-item class="q-px-none">
-                            <q-item-section avatar top>
-                                <q-avatar color="primary" text-color="white" size="32px" class="text-body2">1</q-avatar>
-                            </q-item-section>
-                            <q-item-section>
-                                <q-item-label class="text-weight-bold">We email you a code</q-item-label>
-                                <q-item-label caption>If that email has an account, a 6-digit reset code is sent to it.</q-item-label>
-                            </q-item-section>
-                        </q-item>
-                        <q-item class="q-px-none">
-                            <q-item-section avatar top>
-                                <q-avatar color="primary" text-color="white" size="32px" class="text-body2">2</q-avatar>
-                            </q-item-section>
-                            <q-item-section>
-                                <q-item-label class="text-weight-bold">Choose a new password</q-item-label>
-                                <q-item-label caption>The code is valid for 15 minutes and can only be used once.</q-item-label>
-                            </q-item-section>
-                        </q-item>
-                        <q-item class="q-px-none">
-                            <q-item-section avatar top>
-                                <q-avatar color="primary" text-color="white" size="32px" class="text-body2">3</q-avatar>
-                            </q-item-section>
-                            <q-item-section>
-                                <q-item-label class="text-weight-bold">Sign in with it</q-item-label>
-                                <q-item-label caption>You'll be signed out everywhere else, and can log back in with your new password.</q-item-label>
-                            </q-item-section>
-                        </q-item>
-                    </q-list>
-                </q-card>
-                <q-card class="no-shadow custom-border radius-md q-pa-lg">
-                    <div class="row items-center">
-                        <q-icon name="bi-envelope" color="primary" size="1.5em" class="q-mr-sm" />
-                        <div class="text-caption text-grey">
-                            Didn't get a code? Check your spam folder, or make sure you typed the email
-                            you registered with.
-                        </div>
-                    </div>
-                </q-card>
-            </div>
+        <div class="lgn-note">
+            <q-icon name="bi-envelope" size="18px" />
+            <div>Didn't get a code? Check your spam folder, or make sure you typed the email you registered with.</div>
         </div>
     </AuthShell>
 </template>
 
 <script setup>
+const SIDE_STEPS = [
+    {
+        "title": "We email you a code",
+        "text": "If that email has an account, a 6-digit reset code is sent to it."
+    },
+    {
+        "title": "Choose a new password",
+        "text": "The code is valid for 15 minutes and can only be used once."
+    },
+    {
+        "title": "Sign in with it",
+        "text": "You'll be signed out everywhere else, and can log back in with your new password."
+    }
+];
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your eParticipation account is ready</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f6f9fc; font-family:'Segoe UI', Roboto, Arial, sans-serif; color:#1e2a44;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f6f9fc; padding:32px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:100%; max-width:600px; background-color:#ffffff; border:1px solid #e4eaf3; border-radius:16px; overflow:hidden;">
+
+          <!-- brand band -->
+          <tr>
+            <td style="background-color:#004EA8; background-image:linear-gradient(135deg,#00306B 0%,#004EA8 100%); padding:28px 32px;">
+              <div style="font-size:12px; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:#FDB813;">CSFLU</div>
+              <div style="font-size:22px; font-weight:800; color:#ffffff; line-height:1.25; padding-top:4px;">eParticipation System</div>
+              <div style="font-size:12px; color:#c9d8ef; padding-top:4px;">City Government of San Fernando, La Union</div>
+            </td>
+          </tr>
+
+          {{ testBanner }}
+
+          <!-- message -->
+          <tr>
+            <td style="padding:36px 40px 8px 40px;">
+              <h2 style="margin:0 0 10px 0; font-size:22px; line-height:1.3; color:#004EA8;">Your eParticipation account is ready</h2>
+              <p style="margin:0; font-size:15px; line-height:1.65; color:#4c5c79;">Hello {{ name }}, the City Government of San Fernando, La Union has a new eParticipation System, and an account has been made for you so you can keep following your feedback. {{ feedback }}</p>
+            </td>
+          </tr>
+
+          <!-- the account -->
+          <tr>
+            <td style="padding:20px 40px 8px 40px;">
+              <div style="background-color:#f2f6fd; border:2px dashed #004EA8; border-radius:12px; padding:16px 20px;">
+                <div style="font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#8493ac;">Your email (username)</div>
+                <div style="font-size:15px; font-weight:700; color:#1e2a44; padding:2px 0 12px 0;">{{ email }}</div>
+                <div style="font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#8493ac;">Temporary password</div>
+                <div style="font-size:26px; font-weight:800; color:#004EA8; letter-spacing:6px; padding:2px 0 4px 0;">{{ password }}</div>
+              </div>
+            </td>
+          </tr>
+
+          <!-- steps -->
+          <tr>
+            <td style="padding:24px 40px 8px 40px;">
+              <div style="font-size:15px; font-weight:700; color:#004EA8; padding-bottom:8px;">How to get started</div>
+              <ol style="margin:0; padding-left:20px; font-size:14px; line-height:1.7; color:#4c5c79;">
+                <li style="padding-bottom:6px;">Open {{ portal }} and choose <b>Log in</b>.</li>
+                <li style="padding-bottom:6px;">Log in with your email and the <b>temporary password</b> above.</li>
+                <li style="padding-bottom:6px;">You will be asked to <b>choose your own password</b> right away. Pick one only you know.</li>
+                <li style="padding-bottom:6px;">Open <b>Feedback</b> from the menu to see your feedback, its status and the replies from the offices.</li>
+              </ol>
+            </td>
+          </tr>
+
+          <tr>
+            <td align="center" style="padding:16px 40px 8px 40px; font-size:14px; line-height:1.6; color:#6b7a99;">
+              Keep this email private until you have changed the password. If you were not expecting it, you can ignore it.
+            </td>
+          </tr>
+
+          <!-- footer -->
+          <tr>
+            <td style="padding:8px 40px 32px 40px;">
+              <div style="border-top:1px solid #e4eaf3; padding-top:18px; font-size:12px; line-height:1.6; color:#8493ac; text-align:center;">
+                This is an automated message from the CSFLU eParticipation System. Please do not reply to it.<br>
+                &copy; City Government of San Fernando, La Union. All rights reserved.
+              </div>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

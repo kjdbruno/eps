@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../../api/api_exception.dart';
 import '../../models/complaint.dart';
 import '../../services/complaint_service.dart';
 import '../../theme/app_theme.dart';
-import '../widgets/app_snack.dart';
+import '../widgets/claim_dialog.dart';
+import 'complaint_detail_screen.dart';
+import 'file_complaint_screen.dart';
+import '../widgets/complaint_body.dart';
+import '../widgets/detail_scaffold.dart';
 import '../widgets/eps_list_view.dart';
 import '../widgets/format.dart';
 import '../widgets/status_badge.dart';
@@ -24,100 +26,82 @@ class _MyComplaintsScreenState extends State<MyComplaintsScreen> {
   void _refresh() => _listKey.currentState?.reload();
 
   Future<void> _openClaimDialog() async {
-    final refCtrl = TextEditingController();
-    final otpCtrl = TextEditingController();
-    final claimed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Claim feedback'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Filed feedback before signing in? Enter its reference number '
-              'and access code to add it to your account.',
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: refCtrl,
-              decoration: const InputDecoration(labelText: 'Reference no.'),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: otpCtrl,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Access code (OTP)'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              try {
-                final msg = await context.read<ComplaintService>().claim(
-                      referenceNo: refCtrl.text.trim(),
-                      otp: otpCtrl.text.trim(),
-                    );
-                if (dialogContext.mounted) Navigator.pop(dialogContext, true);
-                if (mounted) showSnack(context, msg);
-              } on ApiException catch (e) {
-                if (dialogContext.mounted) {
-                  showSnack(dialogContext, e.message, error: true);
-                }
-              }
-            },
-            child: const Text('Claim'),
-          ),
-        ],
-      ),
-    );
-    refCtrl.dispose();
-    otpCtrl.dispose();
-    if (claimed == true) _refresh();
+    if (await showClaimSheet(context)) _refresh();
   }
+
+  static const _inProgress = [
+    'unverified',
+    'verified',
+    'pending',
+    'unassigned',
+    'received',
+    'ongoing',
+  ];
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Feedback'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.link),
-            tooltip: 'Claim feedback',
-            onPressed: _openClaimDialog,
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          await context.push('/file-complaint');
-          _refresh();
-        },
-        icon: const Icon(Icons.add),
-        label: const Text('File'),
-      ),
-      body: EpsListView<Complaint>(
+    return ListPage(
+      heroColors: DetailColors.feedback,
+      heroTag: 'My feedback',
+      title: 'Feedback',
+      subtitle: 'Everything you have filed, and what happened to it.',
+      actions: [
+        CircleAction(
+          icon: Icons.link_rounded,
+          label: 'Claim',
+          onTap: _openClaimDialog,
+        ),
+        CircleAction(
+          icon: Icons.add_rounded,
+          label: 'File',
+          filled: true,
+          onTap: () async {
+            if (await showFileFeedbackSheet(context)) _refresh();
+          },
+        ),
+      ],
+      child: EpsListView<Complaint>(
+        live: const ['complaint'],
+        accent: AppTheme.feedbackColor,
         key: _listKey,
         loader: () => context.read<ComplaintService>().myComplaints(),
         noun: 'feedback',
-        searchHint: 'Search reference no...',
+        searchHint: 'Search by reference number...',
         emptyIcon: Icons.description_outlined,
-        emptyText: 'No feedback yet.',
+        emptyText: 'Nothing filed yet',
         loadingText: 'Loading feedback...',
         matches: (c, q) => c.referenceNo.toLowerCase().contains(q),
-        rowBuilder: (context, c) => EpsListRow(
-          leadingColor: AppTheme.statusColor(c.status),
-          leadingIcon: Icons.description,
+        filters: [
+          EpsFilter<Complaint>('All', (_) => true),
+          EpsFilter<Complaint>(
+            'In progress',
+            (c) => _inProgress.contains(c.status),
+          ),
+          EpsFilter<Complaint>('Completed', (c) => c.status == 'completed'),
+          EpsFilter<Complaint>('Cancelled', (c) => c.status == 'cancelled'),
+        ],
+        rowBuilder: (context, c) => EpsInfoCard(
+          icon: Icons.description_outlined,
+          accent: c.status == 'cancelled'
+              ? const Color(0xFFC10015)
+              : c.status == 'completed'
+                  ? const Color(0xFFD99A00)
+                  : AppTheme.feedbackDeep,
           title: c.referenceNo,
-          subtitle: formatDate(c.createdAt),
-          trailing: [StatusBadge(c.status)],
+          caption:
+              c.content.isEmpty ? 'Feedback' : c.content.replaceAll('\n', ' '),
+          badge: StatusBadge(c.status),
+          facts: [
+            ('Filed', shortDate(c.createdAt)),
+            ('Offices', c.offices.isEmpty ? 'Not yet' : '${c.offices.length}'),
+            ('Progress', '${(complaintProgress(c.status) * 100).round()}%'),
+          ],
+          progress: complaintProgress(c.status),
+          footer: c.offices.isEmpty
+              ? 'Waiting to be routed'
+              : 'With ${c.offices.first.label}',
           onTap: () async {
-            await context.push('/my-complaints/${c.id}');
+            await showComplaintSheet(context, c.id);
             _refresh();
           },
         ),

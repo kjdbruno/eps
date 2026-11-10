@@ -148,7 +148,9 @@ createQuasarApp(createApp, quasarUserOptions)
       
       import('boot/socket'),
       
-      import('boot/sweetalert')
+      import('boot/sweetalert'),
+      
+      import('boot/icons')
       
     ]).then(bootFiles => {
       const boot = mapFn(bootFiles).filter(entry => typeof entry === 'function')

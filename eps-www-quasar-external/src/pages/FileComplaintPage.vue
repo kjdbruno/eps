@@ -1,80 +1,97 @@
 <template>
-    <AuthShell
-        title="File Feedback"
-        subtitle="No account needed — we'll email you a one-time code to verify it."
-        max-width="1100px"
-        wide
-    >
-        <div class="row q-col-gutter-xl">
-            <div class="col-12 col-md-7">
-                <q-card class="no-shadow custom-border radius-md q-pa-xl">
-                    <ComplaintForm mode="guest" @submitted="onSubmitted" />
-                </q-card>
-            </div>
-            <div class="col-12 col-md-5">
-                <q-card class="no-shadow bg-accent radius-md q-pa-xl q-mb-md">
-                    <div class="text-overline text-primary text-weight-bold q-mb-md">what happens next</div>
-                    <q-list>
-                        <q-item class="q-px-none">
-                            <q-item-section avatar top>
-                                <q-avatar color="primary" text-color="white" size="32px" class="text-body2">1</q-avatar>
-                            </q-item-section>
-                            <q-item-section>
-                                <q-item-label class="text-weight-bold">We email you a one-time code</q-item-label>
-                                <q-item-label caption>Verify it to confirm your feedback is genuine and get a reference number.</q-item-label>
-                            </q-item-section>
-                        </q-item>
-                        <q-item class="q-px-none">
-                            <q-item-section avatar top>
-                                <q-avatar color="primary" text-color="white" size="32px" class="text-body2">2</q-avatar>
-                            </q-item-section>
-                            <q-item-section>
-                                <q-item-label class="text-weight-bold">It's routed automatically</q-item-label>
-                                <q-item-label caption>The system reads what you wrote and assigns it to the right department — no category to pick.</q-item-label>
-                            </q-item-section>
-                        </q-item>
-                        <q-item class="q-px-none">
-                            <q-item-section avatar top>
-                                <q-avatar color="primary" text-color="white" size="32px" class="text-body2">3</q-avatar>
-                            </q-item-section>
-                            <q-item-section>
-                                <q-item-label class="text-weight-bold">Track it anytime</q-item-label>
-                                <q-item-label caption>Use your reference number and access code on the Track page to check its status.</q-item-label>
-                            </q-item-section>
-                        </q-item>
-                    </q-list>
-                </q-card>
-                <q-card class="no-shadow custom-border radius-md q-pa-lg">
-                    <div class="row items-center">
-                        <q-icon name="bi-shield-check" color="primary" size="1.5em" class="q-mr-sm" />
-                        <div class="text-caption text-grey">
-                            Reporting anonymously is fully supported — your identity stays hidden from
-                            everyone except what's needed to send you the one-time code.
+    <AuthShell>
+        <div class="tone-feedback">
+            <SectionHero
+                icon="bi-chat-quote" eyebrow="open to every resident" title="Feedback"
+                subtitle="Report a concern and it is sent to the right city office. Sign in to file yours, and see below what others are reporting right now."
+            >
+                <router-link class="sh-act sh-act--main" to="/login"><q-icon name="bi-box-arrow-in-right" />Sign in to file</router-link>
+                <router-link class="sh-act" to="/register"><q-icon name="bi-person-plus" />Create an account</router-link>
+            </SectionHero>
+
+            <div class="pt-split">
+                <div>
+                    <div class="row items-center no-wrap q-mb-md">
+                        <div class="col">
+                            <div class="pt-title" style="font-size: 20px;">Happening now</div>
+                            <div class="pt-sub">A few recent feedback items. Names and contact details are never shown.</div>
+                        </div>
+                        <q-btn flat rounded no-caps color="primary" icon="bi-shuffle" label="Show others" :loading="loading" @click="load" />
+                    </div>
+
+                    <div v-if="loading && !items.length" class="row justify-center q-py-xl"><q-spinner-oval size="lg" color="primary" /></div>
+
+                    <div v-else-if="!items.length" class="pt-card pt-empty">
+                        <div class="pt-empty-ico"><q-icon name="bi-chat-left-text" /></div>
+                        <div class="pt-empty-t">Nothing to show yet</div>
+                        <div>Recent feedback appears here once it has been sent to an office.</div>
+                    </div>
+
+                    <div v-else class="pt-rows">
+                        <div v-for="(f, i) in items" :key="i" class="sc sc--static">
+                            <div class="sc-top">
+                                <span class="sc-ico"><q-icon name="bi-chat-quote" /></span>
+                                <div class="sc-main">
+                                    <div class="sc-type">feedback</div>
+                                    <div class="sc-title">{{ f.offices.length ? f.offices.join(' · ') : 'City offices' }}</div>
+                                </div>
+                                <span class="pt-pill" :class="`pt-st-${f.status}`">{{ f.status }}</span>
+                            </div>
+                            <div class="sc-desc sc-desc--more">{{ f.content }}</div>
+                            <div class="sc-foot">
+                                <span class="sc-chip"><q-icon name="bi-clock" size="13px" />{{ ago(f.createdAt) }}</span>
+                            </div>
                         </div>
                     </div>
-                </q-card>
+                </div>
+                <SideInfo title="how filing works" :steps="SIDE_STEPS" icon="bi-incognito">You can file anonymously once you are signed in: only your name is hidden from the offices and staff.</SideInfo>
             </div>
         </div>
     </AuthShell>
 </template>
 
 <script setup>
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { useQuasar } from 'quasar';
+import moment from 'moment';
+import { api } from 'src/boot/axios';
+import { useAuthStore } from 'src/stores/auth-store';
 import AuthShell from 'src/components/AuthShell.vue';
-import ComplaintForm from 'src/components/ComplaintForm.vue';
+import SectionHero from 'src/components/SectionHero.vue';
+import SideInfo from 'src/components/SideInfo.vue';
 
-const $q = useQuasar();
+const SIDE_STEPS = [
+    { title: 'Sign in or create an account', text: 'Filing is for signed-in residents, so you can follow it and add to it later.' },
+    { title: 'It is routed automatically', text: 'The system reads what you wrote and sends it to the right department, with no category to pick.' },
+    { title: 'Follow it, or cancel it', text: 'Watch every update from My feedback. You can cancel it any time before it is completed.' },
+];
+
 const router = useRouter();
+const authStore = useAuthStore();
 
-const onSubmitted = ({ error }) => {
-    if (error) {
-        $q.notify({ type: 'negative', message: error.response?.data?.message || 'Unable to submit your feedback.' });
+const items = ref([]);
+const loading = ref(false);
+const ago = (t) => moment(t).fromNow();
+
+// a few random, recent ones — "Show others" draws a new set
+const load = async () => {
+    loading.value = true;
+    try {
+        const response = await api.get('/complaint/public/feed', { params: { limit: 6 } });
+        items.value = response.data.data || [];
+    } catch (e) {
+        console.error(e);
+    } finally {
+        loading.value = false;
+    }
+};
+
+onMounted(() => {
+    // someone who is signed in files from their own page
+    if (authStore.isAuthenticated) {
+        router.replace('/home/complaint?action=file');
         return;
     }
-
-    $q.notify({ type: 'positive', message: 'We\'ve emailed you a one-time code — verify it to finish filing.' });
-    // Verification only needs the code now — no reference number to pass along.
-    router.push({ path: '/verify-complaint' });
-};
+    load();
+});
 </script>

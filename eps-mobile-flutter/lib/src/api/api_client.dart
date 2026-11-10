@@ -14,7 +14,7 @@ class ApiClient {
       BaseOptions(
         baseUrl: AppConfig.apiBaseUrl,
         connectTimeout: const Duration(seconds: 15),
-        receiveTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 60),
         headers: {'api': Env.apiKey},
       ),
     );
@@ -37,6 +37,10 @@ class ApiClient {
           if (isAuthError) {
             onUnauthorized?.call();
           }
+          // 428: a seeded account that still has its temporary password (see ChangePasswordScreen)
+          if (status == 428 && body is Map && body['mustChangePassword'] == true) {
+            onPasswordChangeRequired?.call();
+          }
           handler.next(e);
         },
       ),
@@ -49,16 +53,23 @@ class ApiClient {
   /// Wired by [AuthController] once it has loaded the persisted session.
   String? Function()? tokenProvider;
   void Function()? onUnauthorized;
+  void Function()? onPasswordChangeRequired;
 
-  static bool _looksLikeAuthFailure(Map body) {
-    // A `notVerified` 403 from /citizen/login is a normal flow, not a session death.
-    if (body['notVerified'] == true) return false;
-    final marker = (body['error'] ?? body['message'] ?? '').toString();
-    return marker.contains('token') ||
-        marker.contains('Token') ||
-        marker.contains('API key') ||
-        marker.contains('session has expired');
-  }
+  // What the API says when the SESSION itself is no longer good (see middlewares/AuthMiddleware.js). Anything else, like a wrong
+  // password or a refused action, is shown by the screen that asked and does not sign the person out.
+  static const _sessionErrors = {
+    'No token provided',
+    'Token not properly formatted',
+    'Token expired',
+    'Failed to authenticate token',
+    'Account disabled',
+    'Session invalidated',
+    'API key is missing',
+    'Invalid API key',
+  };
+
+  static bool _looksLikeAuthFailure(Map body) =>
+      _sessionErrors.contains((body['error'] ?? '').toString());
 
   Future<Response<T>> get<T>(
     String path, {

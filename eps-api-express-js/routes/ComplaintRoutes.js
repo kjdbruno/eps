@@ -47,16 +47,23 @@ module.exports = (ComplaintController) => {
     // staff role — getAnalytics itself scopes the data (whole system for super/admin, one
     // office for workstation).
     router.get('/analytics', verifyToken, ComplaintController.getAnalytics);
+    router.post('/sentiments/read', verifyToken, requireRole('super', 'admin'), ComplaintController.readSentiments);
+    router.get('/sentiments/read', verifyToken, requireRole('super', 'admin'), ComplaintController.getSentimentRun);
     // Also before /:id, same reasoning — feeds the overview's "feedback locations" map. Open to
     // every staff role, scoped the same way getAnalytics is (own office only for workstation).
     router.get('/locations', verifyToken, ComplaintController.getComplaintLocations);
+    // The random current feedback shown to visitors who are not signed in (API key only). Before /:id.
+    router.get('/public/feed', validateApiKey, ComplaintController.publicFeed);
     router.get('/:id', verifyToken, ComplaintController.getComplaintDetail);
     // Assignment is a super/admin-only module.
     router.get('/:id/suggest-office', verifyToken, requireRole('super', 'admin'), ComplaintController.suggestOffice);
     router.patch('/:id/office', verifyToken, requireRole('super', 'admin'), ComplaintController.reassignOffice);
-    // "Reassign SLA" — no per-office SLA anymore, so this corrects the ARTA/EODB complexity tier
-    // (which is what actually drives the resolution deadline) instead.
-    router.patch('/:id/complexity', verifyToken, requireRole('super', 'admin'), ComplaintController.reassignComplexity);
+    // The one-time 3-day extension: the office handling the feedback (or a super/admin) asks for it.
+    router.post('/:id/extension', verifyToken, requireRole('workstation', 'super', 'admin'), ComplaintController.requestExtension);
+    // An office hands the feedback over to other offices, with a reason; its own part of the trail ends there.
+    router.post('/:id/handoff', verifyToken, requireRole('workstation'), ComplaintController.handOff);
+    // A signed-in citizen cancels their own feedback before it is completed.
+    router.post('/:id/cancel', verifyToken, ComplaintController.cancelOwnComplaint);
     router.patch('/:id/status', verifyToken, requireRole('super', 'admin'), ComplaintController.updateStatus);
     // Advisory-only read, same audience as the status action it feeds (see
     // utils/completionSuggestion.js) — never changes anything itself.

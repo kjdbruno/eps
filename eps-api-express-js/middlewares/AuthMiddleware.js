@@ -1,6 +1,10 @@
 const jwt = require('jsonwebtoken');
 const { User } = require('../models');
 
+// An account that has not yet chosen its own password (a seeded one: see User.mustChangePassword) may only choose it, sign
+// out, or check its session: every other request is refused with 428 until it does.
+const FIRST_LOGIN_ALLOWED = ['/api/change-password', '/api/logout', '/api/check-token'];
+
 exports.verifyToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     if (!authHeader) {
@@ -29,7 +33,7 @@ exports.verifyToken = (req, res, next) => {
         // account, or a role change (e.g. workstation promoted to admin, or demoted), takes effect
         // on the very next request instead of waiting for the old token to expire.
         try {
-            const user = await User.findByPk(decoded.id, { attributes: ['id', 'role', 'isActive', 'forceLogoutAt'] });
+            const user = await User.findByPk(decoded.id, { attributes: ['id', 'role', 'isActive', 'forceLogoutAt', 'mustChangePassword'] });
             if (!user || !user.isActive) {
                 return res.status(401).json({ error: 'Account disabled', message: 'This account is no longer active. Please log in again.' });
             }
@@ -43,6 +47,9 @@ exports.verifyToken = (req, res, next) => {
             // copy). The message stays generic since either case can land here.
             if (user.forceLogoutAt && decoded.iat * 1000 < new Date(user.forceLogoutAt).getTime()) {
                 return res.status(401).json({ error: 'Session invalidated', message: 'Your session has ended. Please log in again.' });
+            }
+            if (user.mustChangePassword && !FIRST_LOGIN_ALLOWED.includes(String(req.originalUrl).split('?')[0].replace(/\/+$/, ''))) {
+                return res.status(428).json({ error: 'Password change required', mustChangePassword: true, message: 'Please choose your own password first.' });
             }
             req.userId = user.id;
             req.role = user.role;

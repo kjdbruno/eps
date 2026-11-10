@@ -14,7 +14,7 @@
 
 body {
     margin: 0;
-    background-color: #FFFFFF;
+    background-color: #0C1530;
 }
 
 // Same radius/border utility scale as eps-www-quasar-internal/external's app.scss — kept
@@ -38,3 +38,5 @@ body {
 .radius-lg {
     border-radius: 25px;
 }
+// The kiosk look (from the revapp kiosk) — frame, hero, tiles, big fields and buttons.
+@import './kiosk.scss';

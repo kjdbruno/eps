@@ -10,7 +10,9 @@ module.exports = (DiscussionController) => {
     // workstation viewer gets office-scoped results while everyone else still sees everything.
     router.get('/', validateApiKey, softAuth, DiscussionController.getAllDiscussions);
     router.get('/:id', validateApiKey, softAuth, DiscussionController.getDiscussion);
-    router.post('/:id/comment', validateApiKey, softAuth, DiscussionController.addComment);
+    // Joining a discussion needs an account: guests can read a thread but not post (citizens, and
+    // staff via the internal app, all send a Bearer token).
+    router.post('/:id/comment', validateApiKey, verifyToken, DiscussionController.addComment);
 
     // Creating, closing, and reopening a discussion is a super/admin-only action. A workstation
     // user is limited to viewing and commenting on whatever's assigned to their own office (see

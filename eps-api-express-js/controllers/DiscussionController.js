@@ -4,6 +4,7 @@ const { askLLM, hasLLM } = require('../utils/llm');
 const { resolvePeriodRange } = require('../utils/periodRange');
 const { pushNotifications } = require('../utils/notifySocket');
 const { logActivity } = require('../utils/activityLog');
+const { emitChanged } = require('../utils/realtime');
 
 // Attaches a display name to a comment JSON: the logged-in author's name when there was one,
 // otherwise whatever guest display name they typed in (defaulting to "Anonymous"). Never leaks
@@ -147,6 +148,17 @@ const assignDiscussionToOffices = async (io, discussion) => {
 };
 
 const isExpired = (discussion) => !!discussion.expiresAt && new Date(discussion.expiresAt) < new Date();
+
+// An expiry date sent when opening a topic has to be a real date that is still ahead — otherwise
+// the topic would be "open" and expired at the same moment and take no comments from the start.
+// Returns an error message, or null when it is fine (or not given).
+const expiryProblem = (expiresAt) => {
+    if (!expiresAt) return null;
+    const when = new Date(expiresAt);
+    if (Number.isNaN(when.getTime())) return 'The expiry date is not a valid date.';
+    if (when <= new Date()) return 'The expiry date must be in the future.';
+    return null;
+};
 
 module.exports = (io) => ({
     // Public list — open topics first, newest first within each. Scoped for a workstation viewer
@@ -316,6 +328,8 @@ module.exports = (io) => ({
         if (!title) {
             return res.status(400).json({ message: 'Title is required.' });
         }
+        const badExpiry = expiryProblem(expiresAt);
+        if (badExpiry) return res.status(400).json({ message: badExpiry });
         try {
             const discussion = await Discussion.create({
                 title,
@@ -433,8 +447,9 @@ module.exports = (io) => ({
         }
     },
 
-    // Open to guests and citizens alike — softAuth attributes it to an account when logged in,
-    // otherwise the guestName the commenter typed (or "Anonymous" if left blank) is stored instead.
+    // Needs a logged-in account (the route uses verifyToken), so the comment is always attributed to
+    // that user; the guestName fallback below only remains for comments that were posted before
+    // guests were stopped from joining.
     // A logged-in workstation user, though, may only comment on a discussion assigned to their own
     // office — super/admin and the public remain unrestricted. monitoring is blocked outright —
     // it never transacts, not even a public-style engagement action.
@@ -479,6 +494,7 @@ module.exports = (io) => ({
             });
 
             notifyStaffOfComment(io, discussion);
+            emitChanged('discussion', 'commented');
 
             return res.status(201).json({ message: 'Comment posted.', data: withAuthorName(withUser.toJSON()) });
         } catch (error) {
@@ -534,7 +550,15 @@ module.exports = (io) => ({
             // Only count a real closed->open transition — calling this on an already-open
             // discussion (a no-op) shouldn't inflate the reopen-rate stat.
             const wasClosed = discussion.status === 'closed';
-            await discussion.update({ status: 'open', reopenCount: wasClosed ? discussion.reopenCount + 1 : discussion.reopenCount });
+            // An expiry date that has already passed would leave it "open" but still taking no
+            // comments, so reopening it clears that date (it then has no expiry). A date still ahead
+            // is kept.
+            const expiresAt = isExpired(discussion) ? null : discussion.expiresAt;
+            await discussion.update({
+                status: 'open',
+                expiresAt,
+                reopenCount: wasClosed ? discussion.reopenCount + 1 : discussion.reopenCount
+            });
 
             if (wasClosed) {
                 logActivity({

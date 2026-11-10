@@ -15,7 +15,7 @@ exports.getAllHolidays = async (req, res) => {
 };
 
 exports.createHoliday = async (req, res) => {
-    const { date, name } = req.body;
+    const { date, name, category } = req.body;
     try {
         const holidayExist = await Holiday.findOne({ where: { date } });
         if (holidayExist) {
@@ -29,7 +29,7 @@ exports.createHoliday = async (req, res) => {
                 }],
             });
         }
-        const holiday = await Holiday.create({ date, name });
+        const holiday = await Holiday.create({ date, name, category });
 
         logActivity({
             module: 'holiday', entityId: holiday.id, action: 'created',
@@ -45,7 +45,7 @@ exports.createHoliday = async (req, res) => {
 
 exports.updateHoliday = async (req, res) => {
     const { id } = req.params;
-    const { date, name } = req.body;
+    const { date, name, category } = req.body;
 
     try {
         const holiday = await Holiday.findByPk(id);
@@ -74,7 +74,7 @@ exports.updateHoliday = async (req, res) => {
                 }],
             });
         }
-        await holiday.update({ date, name });
+        await holiday.update({ date, name, category });
 
         logActivity({
             module: 'holiday', entityId: holiday.id, action: 'updated',

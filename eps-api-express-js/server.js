@@ -1,5 +1,9 @@
 require('dotenv').config();
+// refuse to start in production with settings that leave the system open (see utils/startupChecks.js)
+require('./utils/startupChecks')();
 const express = require('express');
+const compression = require('compression');
+const { maskServerErrors, errorHandler, notFound } = require('./middlewares/serverErrors');
 const cors = require('cors');
 const helmet = require('helmet');
 const http = require('http');
@@ -8,6 +12,14 @@ const { Sequelize } = require('sequelize');
 const path = require('path');
 const app = express();
 const server = http.createServer(app);
+
+// Behind a reverse proxy (nginx, IIS...) every request would look as if it came from the proxy, so the rate limits (sign-in, codes)
+// would count all visitors together. TRUST_PROXY is how many proxies sit in front of this server (1 is usual); with it set, the
+// real visitor address is read from X-Forwarded-For. Left unset, the address of the connection is used, as before.
+if (process.env.TRUST_PROXY) {
+  const hops = process.env.TRUST_PROXY.trim();
+  app.set('trust proxy', /^\d+$/.test(hops) ? Number(hops) : hops === 'true');
+}
 
 // `origin: '*'` + `credentials: true` together is an invalid/dangerous combination — most
 // browsers reject sending credentials to a wildcard origin, and where one doesn't, it defeats the
@@ -39,6 +51,9 @@ const io = socketIo(server, {
       : { origin: '*', methods: ['GET', 'POST'], allowedHeaders: ['Content-Type'] }
 });
 
+// the controllers tell connected screens when data changes (see utils/realtime.js)
+require('./utils/realtime').setIo(io);
+
 // Middleware
 // crossOriginResourcePolicy defaults to 'same-origin', which would block the internal/external
 // Quasar apps (a different origin, by design — see the CORS setup above) from loading anything
@@ -53,13 +68,20 @@ app.use(cors(corsOrigins
   ? { origin: corsOrigins, methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'], credentials: true }
   : { origin: '*', methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'] }
 ));
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+// answers are sent compressed (the lists and reports are large JSON)
+app.use(compression());
+// a 5xx never tells a visitor what the database said (production only, see middlewares/serverErrors.js)
+app.use(maskServerErrors);
+// Photos and files are uploaded as multipart (limited per file in the routes), so a JSON body has no reason to be big: 50 MB let
+// anybody tie the server up with one request. The report PDF export is the largest one that is sent as JSON.
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // Initialize Sequelize
 const sequelize = new Sequelize(process.env.DB_NAME, process.env.DB_USER, process.env.DB_PASS, {
   host: process.env.DB_HOST,
-  dialect: process.env.DB_DIALECT
+  dialect: process.env.DB_DIALECT,
+  logging: false
 });
 
 sequelize.authenticate()
@@ -86,12 +108,16 @@ app.use('/api/preference/user', UserRoutes(User));
 app.use('/api/preference/office', require('./routes/OfficeRoutes'));
 app.use('/api/preference/complainttype', require('./routes/ComplaintTypeRoutes'));
 app.use('/api/preference/holiday', require('./routes/HolidayRoutes'));
+app.use('/api/preference/canned', require('./routes/CannedMessageRoutes'));
+app.use('/api/preference/clients', require('./routes/ClientAccountRoutes'));
+app.use('/api/change-password', require('./routes/PasswordRoutes'));
 app.use('/api/feedback', require('./routes/FeedbackRoutes'))
 app.use('/api/nav-badges', require('./routes/NavBadgeRoutes'))
 app.use('/api/notification', require('./routes/NotificationRoutes'))
 app.use('/api/device-token', require('./routes/DeviceTokenRoutes'))
 
-app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
+// avatars: cached for a week by the browser, never a directory listing or a hidden file
+app.use('/uploads', express.static(path.join(__dirname, 'public/uploads'), { maxAge: '7d', index: false, dotfiles: 'deny' }));
 
 const ComplaintRoutes = require('./routes/ComplaintRoutes');
 const ComplaintController = require('./controllers/ComplaintController');
@@ -134,6 +160,10 @@ const MessageCtrl = MessageController(io);
 app.use('/api/messages', MessageRoutes(MessageCtrl));
 
 require('./sockets')(io);
+
+// anything that matched nothing, and anything that was thrown: a short JSON answer (never a stack trace)
+app.use(notFound);
+app.use(errorHandler);
 
 // // Assuming your 'backend' folder is a direct sibling of 'frontend' within 'my-app/'
 // // and this server.js/app.js is directly within 'backend/' or 'backend/dist/'

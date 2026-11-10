@@ -5,13 +5,14 @@ const { verifyToken, softAuth, validateApiKey, requireRole } = require('../middl
 module.exports = (PollController) => {
     const router = express.Router();
 
-    // Public (citizen/guest) reads/votes stay open via the API key — softAuth additionally
+    // Public (citizen/guest) reads stay open via the API key — softAuth additionally
     // decodes a Bearer token when one is present (the internal staff app always sends both), so a
     // logged-in workstation viewer gets office-scoped results while everyone else still sees
     // everything.
     router.get('/', validateApiKey, softAuth, PollController.getAllPolls);
     router.get('/:id', validateApiKey, softAuth, PollController.getPoll);
-    router.post('/:id/vote', validateApiKey, softAuth, PollController.vote);
+    // Answering a poll needs an account: guests can see a poll but not vote on it.
+    router.post('/:id/vote', validateApiKey, verifyToken, PollController.vote);
 
     // Creating, closing, and reopening a poll is a super/admin-only action. A workstation user is
     // limited to viewing whatever's assigned to their own office; voting is reserved for

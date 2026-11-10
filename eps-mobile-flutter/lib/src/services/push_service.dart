@@ -31,13 +31,16 @@ class PushService {
   /// Call once, early (main.dart) — wires up the notification-tap handler. Does NOT request
   /// permission or register a token; that only happens once someone is actually signed in (see
   /// [registerCurrentToken]), so a guest browsing anonymously is never prompted for it.
-  Future<void> initialize({void Function(Map<String, dynamic> data)? onTap}) async {
+  Future<void> initialize({
+    void Function(Map<String, dynamic> data)? onTap,
+  }) async {
     if (_initialized || kIsWeb) return;
     _initialized = true;
 
     // Tapped a push that opened the app from background, or (getInitialMessage) from fully
     // terminated.
-    FirebaseMessaging.onMessageOpenedApp.listen((message) => onTap?.call(message.data));
+    FirebaseMessaging.onMessageOpenedApp
+        .listen((message) => onTap?.call(message.data));
     final initial = await FirebaseMessaging.instance.getInitialMessage();
     if (initial != null) onTap?.call(initial.data);
   }
@@ -47,7 +50,9 @@ class PushService {
   /// token with the backend. Failures here are swallowed: push is a nice-to-have layered on top
   /// of the in-app/socket notifications, never something that should block signing in.
   Future<void> registerCurrentToken() async {
-    if (kIsWeb) return; // Web push needs a service worker + VAPID key — out of scope here.
+    if (kIsWeb) {
+      return; // Web push needs a service worker + VAPID key — out of scope here.
+    }
     try {
       final settings = await FirebaseMessaging.instance.requestPermission();
       if (settings.authorizationStatus == AuthorizationStatus.denied) return;

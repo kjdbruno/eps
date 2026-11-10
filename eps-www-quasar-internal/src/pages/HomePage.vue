@@ -44,11 +44,11 @@
             </div>
         </q-card>
 
-        <!-- System overview — combines Complaint/Feedback/Discussion/Poll into one dashboard -->
-        <div class="row items-center justify-between q-mb-sm">
-            <div class="text-caption text-uppercase text-grey">
-                system overview<template v-if="overviewScopeLabel"> &middot; {{ overviewScopeLabel }}</template>
-                <template v-if="overviewRangeLabel"> &middot; {{ overviewRangeLabel }}</template>
+        <!-- The period of everything below -->
+        <div class="row items-center justify-between q-mb-md hp-controls">
+            <div>
+                <div class="hp-eyebrow-dark">system overview<template v-if="overviewScopeLabel"> &middot; {{ overviewScopeLabel }}</template></div>
+                <div class="text-h5">{{ overviewRangeLabel || ' ' }}</div>
             </div>
             <div class="row items-center q-gutter-sm">
                 <q-btn
@@ -78,155 +78,190 @@
             </div>
         </div>
 
-        <div class="hp-stat-grid q-mb-lg">
-            <q-card flat class="hp-stat radius-xs bg-primary">
-                <div class="hp-stat-value text-white">{{ overallSatisfactionLabel }}</div>
-                <div class="hp-stat-label text-white">overall satisfaction</div>
-            </q-card>
-            <q-card flat class="hp-stat radius-xs custom-border">
-                <div class="hp-stat-value text-primary">{{ complaintData.kpis.totalComplaints ?? 0 }}</div>
-                <div class="hp-stat-label text-grey">feedback filed</div>
-            </q-card>
-            <q-card flat class="hp-stat radius-xs custom-border">
-                <div class="hp-stat-value text-primary">{{ feedbackData.kpis.totalFeedback ?? 0 }}</div>
-                <div class="hp-stat-label text-grey">CSM reports collected</div>
-            </q-card>
-            <q-card flat class="hp-stat radius-xs custom-border">
-                <div class="hp-stat-value text-primary">{{ discussionTotals.topics }}</div>
-                <div class="hp-stat-label text-grey">discussions opened</div>
-            </q-card>
-            <q-card flat class="hp-stat radius-xs custom-border">
-                <div class="hp-stat-value text-primary">{{ pollTotals.polls }}</div>
-                <div class="hp-stat-label text-grey">polls created</div>
-            </q-card>
-            <q-card flat class="hp-stat radius-xs custom-border">
-                <div class="hp-stat-value text-primary">{{ totalTouchpoints }}</div>
-                <div class="hp-stat-label text-grey">total citizen touchpoints</div>
-            </q-card>
-            <q-card flat class="hp-stat radius-xs custom-border">
-                <div class="hp-stat-value text-primary">{{ approvalLagLabel }}</div>
-                <div class="hp-stat-label text-grey">
-                    avg. office-completion &rarr; feedback-completion
-                    <q-tooltip>Average time between every assigned office marking its own part done and a supervisor actually finalizing the feedback.</q-tooltip>
-                </div>
-            </q-card>
+        <!-- Needs your attention: what is waiting on someone, from every module. Each tile opens its module. -->
+        <div class="ov-title">needs your attention</div>
+        <div class="ov-attn-grid ov-cols-4 q-mb-lg">
+            <div v-for="t in attnTiles" :key="t.key" class="ov-attn ov-attn--click" :class="attnTone(t.count, t.tone)" @click="router.push({ name: t.route })">
+                <q-icon :name="t.icon" size="18px" class="ov-attn-ico" />
+                <div class="ov-attn-value">{{ t.count }}</div>
+                <div class="ov-attn-label">{{ t.label }}</div>
+                <div class="ov-attn-sub">{{ t.sub }}</div>
+            </div>
         </div>
 
+        <!-- How it is going, across the modules -->
+        <div class="ov-title">how it is going</div>
+        <div class="ov-kpi-grid ov-cols-4 q-mb-lg">
+            <div class="ov-kpi">
+                <div class="ov-kpi-head"><q-icon name="bi-emoji-smile" size="16px" /> citizen satisfaction</div>
+                <div class="ov-kpi-value">{{ overallSatisfactionLabel }}</div>
+                <div class="ov-kpi-sub">feedback and CSM, blended</div>
+            </div>
+            <div class="ov-kpi">
+                <div class="ov-kpi-head"><q-icon name="bi-chat-quote" size="16px" /> feedback filed</div>
+                <div class="ov-kpi-value">{{ complaintData.kpis.totalComplaints ?? 0 }}</div>
+                <div class="ov-kpi-sub">{{ completedShare }}% completed</div>
+            </div>
+            <div class="ov-kpi">
+                <div class="ov-kpi-head"><q-icon name="bi-envelope-check" size="16px" /> time to acknowledge</div>
+                <div class="ov-kpi-value">{{ formatSpan(complaintData.kpis.avgAcknowledgementDays) }}</div>
+                <div class="ov-kpi-sub">target: within 1 day</div>
+            </div>
+            <div class="ov-kpi">
+                <div class="ov-kpi-head"><q-icon name="bi-check2-circle" size="16px" /> time to resolve</div>
+                <div class="ov-kpi-value">{{ formatSpan(complaintData.kpis.avgResolutionDays) }}</div>
+                <div class="ov-kpi-sub">target: within 3 days</div>
+            </div>
+            <div class="ov-kpi">
+                <div class="ov-kpi-head"><q-icon name="bi-clipboard-data" size="16px" /> CSM reports</div>
+                <div class="ov-kpi-value">{{ feedbackData.kpis.totalFeedback ?? 0 }}</div>
+                <div class="ov-kpi-sub">{{ feedbackData.kpis.avgSatisfaction != null ? feedbackData.kpis.avgSatisfaction + '% satisfied' : 'not rated yet' }}</div>
+            </div>
+            <div class="ov-kpi">
+                <div class="ov-kpi-head"><q-icon name="bi-people" size="16px" /> citizen touchpoints</div>
+                <div class="ov-kpi-value">{{ totalTouchpoints }}</div>
+                <div class="ov-kpi-sub">filings, reports, comments, answers</div>
+            </div>
+            <div class="ov-kpi">
+                <div class="ov-kpi-head"><q-icon name="bi-person-check" size="16px" /> time to approve</div>
+                <div class="ov-kpi-value">{{ approvalLagLabel }}</div>
+                <div class="ov-kpi-sub">offices done &rarr; completed</div>
+            </div>
+        </div>
+
+        <!-- One card for each module, with what it holds this period and the way in -->
+        <div class="ov-title">the modules</div>
+        <div class="hp-mod-grid q-mb-lg">
+            <div v-for="m in moduleCards" :key="m.route" class="hp-mod" :class="'hp-mod--' + m.key" @click="router.push({ name: m.route })">
+                <div class="hp-mod-top">
+                    <span class="hp-mod-ico"><q-icon :name="m.icon" size="20px" /></span>
+                    <div class="col" style="min-width: 0;">
+                        <div class="hp-mod-title">{{ m.title }}</div>
+                        <div class="hp-mod-desc">{{ m.description }}</div>
+                    </div>
+                    <q-badge v-if="m.badge > 0" color="negative" rounded>{{ m.badge }}</q-badge>
+                </div>
+                <div class="hp-mod-stats">
+                    <div v-for="x in m.stats" :key="x.label"><b>{{ x.value }}</b><span>{{ x.label }}</span></div>
+                </div>
+                <div class="hp-mod-go">open <q-icon name="bi-arrow-right" size="14px" /></div>
+            </div>
+        </div>
+
+        <!-- The feedback process: how far the feedback got, and whether the deadlines held -->
+        <div class="ov-title">how feedback was handled</div>
+        <div class="ov-duo q-mb-md">
+            <div class="ov-card">
+                <div class="ov-card-head">
+                    <div class="ov-card-title">where the feedback got to</div>
+                    <div class="ov-card-note">of {{ pipeline.filed }} filed</div>
+                </div>
+                <div v-for="(st, i) in pipelineSteps" :key="st.key" class="ov-step">
+                    <div class="ov-step-top">
+                        <span class="ov-step-n">{{ i + 1 }}</span>
+                        <span class="ov-step-label">{{ st.label }}</span>
+                        <span class="ov-step-count">{{ st.count }}</span>
+                        <span class="ov-step-pct">{{ st.pct }}%</span>
+                    </div>
+                    <div class="cp-meter"><div class="cp-meter-fill" :style="{ width: st.pct + '%', background: st.color }"></div></div>
+                </div>
+                <div class="ov-card-foot">Filed, routed to an office, acknowledged, the office marks its part done, a supervisor completes it.</div>
+            </div>
+
+            <div class="ov-card">
+                <div class="ov-card-head">
+                    <div class="ov-card-title">deadlines</div>
+                    <div class="ov-card-note">1 day to acknowledge &middot; 3 days to resolve</div>
+                </div>
+                <div v-for="m in deadlineMeters" :key="m.label" class="ov-meter-row">
+                    <div class="ov-meter-top"><span>{{ m.label }}</span><b>{{ m.value != null ? m.value + '%' : '—' }}</b></div>
+                    <div class="cp-meter"><div class="cp-meter-fill" :style="{ width: (m.value || 0) + '%', background: m.color }"></div></div>
+                    <div v-if="m.sub" class="ov-meter-sub">{{ m.sub }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="ov-trio q-mb-lg">
+            <div class="ov-card">
+                <div class="ov-card-head">
+                    <div class="ov-card-title">feedback by status</div>
+                    <div class="ov-card-note">{{ statusBreakdownTotal }} feedback</div>
+                </div>
+                <div v-for="s in statusBreakdownRows" :key="s.status" class="ov-step">
+                    <div class="ov-step-top">
+                        <span class="ov-step-label text-capitalize">{{ s.status }}</span>
+                        <span class="ov-step-count">{{ s.count }}</span>
+                        <span class="ov-step-pct">{{ s.percent }}%</span>
+                    </div>
+                    <div class="cp-meter"><div class="cp-meter-fill" :style="{ width: (s.percent || 0) + '%', background: '#204888' }"></div></div>
+                </div>
+                <div v-if="!statusBreakdownRows.length" class="ov-empty">no feedback in this period</div>
+            </div>
+
+            <div class="ov-card">
+                <div class="ov-card-head"><div class="ov-card-title">how it was filed</div><div class="ov-card-note">{{ pipeline.filed }} in total</div></div>
+                <apexchart v-if="filedHowSeries.some(n => n > 0)" type="donut" height="210" :options="filedHowOptions" :series="filedHowSeries" />
+                <div v-else class="ov-empty">nothing filed in this period</div>
+            </div>
+
+            <div class="ov-card">
+                <div class="ov-card-head"><div class="ov-card-title">where the touchpoints are</div><div class="ov-card-note">this period</div></div>
+                <apexchart v-if="shareChartSeries.some(n => n > 0)" type="donut" height="210" :options="shareChartOptions" :series="shareChartSeries" />
+                <div v-else class="ov-empty">no activity yet</div>
+            </div>
+
+            <div class="ov-card">
+                <div class="ov-card-head"><div class="ov-card-title">how citizens feel</div><div class="ov-card-note">read by AI</div></div>
+                <div v-for="g in feelGroups" :key="g.label" class="hp-feel">
+                    <div class="ov-step-top"><span class="ov-step-label">{{ g.label }}</span><span class="ov-step-count">{{ g.total }}</span></div>
+                    <div v-if="g.total" class="hp-feel-bar">
+                        <span v-for="b in g.parts" :key="b.label" :style="{ width: b.pct + '%', background: b.hex }"><q-tooltip>{{ b.count }} {{ b.label }} ({{ b.pct }}%)</q-tooltip></span>
+                    </div>
+                    <div v-else class="ov-empty">none read yet</div>
+                    <div v-if="g.total" class="hp-feel-legend">
+                        <span v-for="b in g.parts" :key="b.label"><i :style="{ background: b.hex }"></i>{{ b.count }} {{ b.label }}</span>
+                    </div>
+                </div>
+                <div class="ov-card-foot">Feedback is read when it is filed; a CSM report is read with its comments and score.</div>
+            </div>
+        </div>
+
+        <!-- Trends -->
+        <div class="ov-title">trends</div>
         <div class="hp-panel-grid q-mb-lg">
-            <q-card flat class="hp-panel custom-border radius-xs q-pa-md">
-                <div class="text-caption text-uppercase text-grey q-mb-sm">filings by channel per {{ bucketUnitLabel }}</div>
+            <div class="ov-card">
+                <div class="ov-card-head"><div class="ov-card-title">filed per {{ bucketUnitLabel }}</div><div class="ov-card-note">by module</div></div>
                 <apexchart type="area" height="240" :options="filingsChartOptions" :series="filingsChartSeries" />
-            </q-card>
-
-            <q-card flat class="hp-panel custom-border radius-xs q-pa-md">
-                <div class="text-caption text-uppercase text-grey q-mb-sm">engagement by channel per {{ bucketUnitLabel }}</div>
-                <div class="text-caption text-grey q-mb-sm">discussion comments &amp; poll votes over time</div>
+            </div>
+            <div class="ov-card">
+                <div class="ov-card-head"><div class="ov-card-title">engagement per {{ bucketUnitLabel }}</div><div class="ov-card-note">comments and survey responses</div></div>
                 <apexchart type="line" height="240" :options="engagementChartOptions" :series="engagementChartSeries" />
-            </q-card>
-
-            <q-card flat class="hp-panel custom-border radius-xs q-pa-md">
-                <div class="text-caption text-uppercase text-grey q-mb-sm">satisfaction &middot; feedback vs. CSM report</div>
+            </div>
+            <div class="ov-card">
+                <div class="ov-card-head"><div class="ov-card-title">satisfaction</div><div class="ov-card-note">feedback vs. CSM report</div></div>
                 <apexchart type="bar" height="200" :options="satisfactionChartOptions" :series="satisfactionChartSeries" />
-            </q-card>
-
-            <!-- Same "label · count (percent%) · bar" idiom as the citizen-facing poll results
-                 (PollVote.vue) — asked for by name over the pie this used to be: with 7 possible
-                 statuses several bars are always going to be thin, but unlike pie slices a thin
-                 bar never loses its label or collides with its neighbor. -->
-            <q-card flat class="hp-panel custom-border radius-xs q-pa-md">
-                <div class="row items-center justify-between q-mb-sm">
-                    <div class="text-caption text-uppercase text-grey">feedback status breakdown</div>
-                    <div class="text-caption text-grey">{{ statusBreakdownTotal }} feedback(s)</div>
-                </div>
-                <div v-for="s in statusBreakdownRows" :key="s.status" class="q-mb-sm">
-                    <div class="row items-center q-mb-xs">
-                        <div class="text-body2 text-capitalize">{{ s.status }}</div>
-                        <q-space />
-                        <div class="text-caption text-grey">{{ s.count }} ({{ s.percent }}%)</div>
-                    </div>
-                    <q-linear-progress :value="(s.percent || 0) / 100" color="primary" track-color="grey-3" size="10px" rounded />
-                </div>
-                <div class="text-caption text-grey" v-if="!statusBreakdownRows.length">No feedback in this period.</div>
-            </q-card>
-
-            <q-card flat class="hp-panel custom-border radius-xs q-pa-md">
-                <div class="text-caption text-uppercase text-grey q-mb-sm">engagement share this period</div>
-                <apexchart type="pie" height="280" :options="shareChartOptions" :series="shareChartSeries" />
-            </q-card>
+            </div>
         </div>
 
-        <!-- Client / citizen-base snapshot — super/admin/monitoring only (system-wide, not office-scoped) -->
+        <!-- The citizen base: super/admin/monitoring only (system-wide, not office-scoped) -->
         <template v-if="canViewAll">
-            <div class="text-caption text-uppercase text-grey q-mb-sm">clients &middot; citizen base</div>
-            <div class="hp-panel-grid q-mb-lg">
-                <q-card flat class="hp-panel custom-border radius-xs q-pa-md">
-                    <div class="hp-client-tiles">
-                        <div>
-                            <div class="hp-stat-value text-primary">{{ clientData.totalRegistered ?? 0 }}</div>
-                            <div class="hp-stat-label text-grey">registered citizens</div>
-                        </div>
-                        <div>
-                            <div class="hp-stat-value text-primary">{{ clientData.newRegistrations ?? 0 }}</div>
-                            <div class="hp-stat-label text-grey">new this period</div>
-                        </div>
-                        <div>
-                            <div class="hp-stat-value" :class="verifiedRateClass">{{ clientData.verifiedRate != null ? clientData.verifiedRate + '%' : '—' }}</div>
-                            <div class="hp-stat-label text-grey">
-                                email-verified
-                                <q-tooltip>Share of all registered citizen accounts that completed email verification.</q-tooltip>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="hp-stat-value text-primary">{{ clientData.avgVerifyMinutes != null ? formatVerifyTime(clientData.avgVerifyMinutes) : '—' }}</div>
-                            <div class="hp-stat-label text-grey">
-                                avg. time to verify
-                                <q-tooltip>Average gap between registering and confirming the email, for accounts verified this period.</q-tooltip>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="hp-stat-value" :class="clientData.repeatFilerRate > 40 ? 'text-negative' : 'text-primary'">{{ clientData.repeatFilerRate != null ? clientData.repeatFilerRate + '%' : '—' }}</div>
-                            <div class="hp-stat-label text-grey">
-                                repeat filers
-                                <q-tooltip>Share of this period's distinct citizens who filed feedback more than once — high can mean unresolved issues or a few heavy users.</q-tooltip>
-                            </div>
-                        </div>
-                    </div>
-                </q-card>
-
-                <q-card flat class="hp-panel custom-border radius-xs q-pa-md">
-                    <div class="text-caption text-uppercase text-grey q-mb-sm">how feedback arrives this period</div>
-                    <apexchart type="pie" height="280" :options="channelChartOptions" :series="channelChartSeries" />
-                </q-card>
+            <div class="ov-title">the citizen base</div>
+            <div class="ov-attn-grid q-mb-lg">
+                <div class="ov-attn ov-attn--info"><div class="ov-attn-value">{{ clientData.totalRegistered ?? 0 }}</div><div class="ov-attn-label">registered citizens</div><div class="ov-attn-sub">all accounts</div></div>
+                <div class="ov-attn ov-attn--info"><div class="ov-attn-value">{{ clientData.newRegistrations ?? 0 }}</div><div class="ov-attn-label">new this period</div><div class="ov-attn-sub">signed up</div></div>
+                <div class="ov-attn" :class="clientData.verifiedRate != null && clientData.verifiedRate < 60 ? 'ov-attn--bad' : 'ov-attn--info'">
+                    <div class="ov-attn-value">{{ clientData.verifiedRate != null ? clientData.verifiedRate + '%' : '—' }}</div>
+                    <div class="ov-attn-label">email-verified</div>
+                    <div class="ov-attn-sub">completed verification</div>
+                </div>
+                <div class="ov-attn ov-attn--info"><div class="ov-attn-value">{{ clientData.avgVerifyMinutes != null ? formatVerifyTime(clientData.avgVerifyMinutes) : '—' }}</div><div class="ov-attn-label">time to verify</div><div class="ov-attn-sub">after registering</div></div>
+                <div class="ov-attn" :class="clientData.repeatFilerRate > 40 ? 'ov-attn--warn' : 'ov-attn--info'">
+                    <div class="ov-attn-value">{{ clientData.repeatFilerRate != null ? clientData.repeatFilerRate + '%' : '—' }}</div>
+                    <div class="ov-attn-label">repeat filers</div>
+                    <div class="ov-attn-sub">filed more than once</div>
+                </div>
             </div>
         </template>
-
-        <!-- Needs-attention snapshot, reusing the same counts the left-nav badges show -->
-        <div class="text-caption text-uppercase text-grey q-mb-sm">needs your attention</div>
-        <div class="hp-kpi-grid q-mb-lg">
-            <q-card
-                v-for="kpi in kpis" :key="kpi.key" flat clickable
-                class="hp-kpi radius-xs custom-border" @click="router.push({ name: kpi.route })"
-            >
-                <div class="hp-kpi-value" :class="kpi.count > 0 ? 'text-negative' : 'text-primary'">{{ kpi.count }}</div>
-                <div class="hp-kpi-label text-grey">{{ kpi.label }}</div>
-            </q-card>
-        </div>
-
-        <!-- Quick access to every module -->
-        <div class="text-caption text-uppercase text-grey q-mb-sm">quick access</div>
-        <div class="hp-module-grid q-mb-lg">
-            <q-card
-                v-for="mod in modules" :key="mod.route" flat clickable
-                class="hp-module radius-xs custom-border" @click="router.push({ name: mod.route })"
-            >
-                <div class="row items-center justify-between no-wrap q-mb-sm">
-                    <q-icon :name="mod.icon" size="26px" color="primary" />
-                    <q-badge v-if="mod.badgeKey && navBadges[mod.badgeKey] > 0" color="negative" rounded>{{ navBadges[mod.badgeKey] }}</q-badge>
-                </div>
-                <div class="text-subtitle1 text-capitalize text-weight-bold">{{ mod.label }}</div>
-                <div class="text-caption text-grey">{{ mod.description }}</div>
-            </q-card>
-        </div>
         </div>
 
         <!-- Team roster — pinned to the right, same rail placement AND rail-list styling as the
@@ -271,9 +306,7 @@
                         </span>
                     </div>
                 </div>
-                <div v-if="!filteredTeam.length" class="hp-team-empty">
-                    <div class="text-caption text-uppercase">no staff found</div>
-                </div>
+                <EmptyState v-if="!filteredTeam.length" rail icon="bi-people" title="No staff found" hint="Try another search." />
             </div>
             <q-btn
                 v-if="showBackToTop"
@@ -297,7 +330,9 @@
 </template>
 
 <script setup>
+import EmptyState from 'src/components/EmptyState.vue';
 import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useLiveRefresh } from 'src/composables/useLiveRefresh';
 import { useRouter } from 'vue-router';
 import moment from 'moment';
 import { api } from 'src/boot/axios';
@@ -389,21 +424,6 @@ const loadNavBadges = async () => {
         console.error('Error loading nav badges:', error);
     }
 };
-
-const kpis = computed(() => ([
-    { key: 'complaint', label: 'unreceived feedback', count: navBadges.value.complaint, route: 'complaint' },
-    { key: 'feedback', label: 'new CSM reports', count: navBadges.value.feedback, route: 'feedback' },
-    { key: 'discussion', label: 'new discussion comments', count: navBadges.value.discussion, route: 'discussion' },
-    { key: 'poll', label: 'new poll votes', count: navBadges.value.poll, route: 'poll' },
-]));
-
-const modules = [
-    { label: 'feedback', route: 'complaint', icon: 'bi-chat-quote', badgeKey: 'complaint', description: 'Receive and address public feedback.' },
-    { label: 'CSM report', route: 'feedback', icon: 'bi-emoji-expressionless', badgeKey: 'feedback', description: 'Review kiosk ratings and citizen CSM reports.' },
-    { label: 'discussion', route: 'discussion', icon: 'bi-people', badgeKey: 'discussion', description: 'Open and moderate public discussion topics.' },
-    { label: 'poll', route: 'poll', icon: 'bi-bar-chart-line', badgeKey: 'poll', description: 'Run public opinion polls and view results.' },
-    { label: 'preference', route: 'preference', icon: 'bi-sliders', badgeKey: null, description: 'Customize your account settings.' },
-];
 
 /* -------------------- weather (hero corner) -------------------- */
 // Open-Meteo — free, keyless, no CORS issues from the browser. Coordinates come from the
@@ -521,6 +541,21 @@ const bucketUnitLabel = computed(() => overviewPeriod.value === 'week' ? 'day' :
 
 const complaintData = ref({ kpis: {}, statusBreakdown: [], volumeTrend: [], satisfaction: {} });
 const feedbackData = ref({ kpis: {}, volumeTrend: [] });
+// how the feedback and the CSM reports of the period read (positive / neutral / negative): see utils/sentiment.js in the API
+const FEEL = [
+    { key: 'positive', hex: '#21BA45' },
+    { key: 'neutral', hex: '#FFC900' },
+    { key: 'negative', hex: '#C10015' },
+];
+const feelOf = (label, mix) => {
+    const m = mix || {};
+    const total = FEEL.reduce((n, f) => n + (m[f.key] || 0), 0);
+    return { label, total, parts: FEEL.map(f => ({ label: f.key, hex: f.hex, count: m[f.key] || 0, pct: total ? Math.round(((m[f.key] || 0) / total) * 100) : 0 })) };
+};
+const feelGroups = computed(() => [
+    feelOf('feedback', complaintData.value.sentiment),
+    feelOf('CSM reports', feedbackData.value.sentimentMix),
+]);
 const discussionsRaw = ref([]);
 const pollsRaw = ref([]);
 
@@ -580,6 +615,104 @@ const overallSatisfaction = computed(() => {
 });
 const overallSatisfactionLabel = computed(() => overallSatisfaction.value != null ? `${Math.round(overallSatisfaction.value)}%` : '—');
 
+/* the feedback process (see ComplaintController.getAnalytics: process, slaCompliance) */
+
+const process_ = computed(() => complaintData.value.process || {});
+const pipeline = computed(() => process_.value.pipeline || { filed: 0, routed: 0, acknowledged: 0, officesDone: 0, completed: 0 });
+const pipelineSteps = computed(() => {
+    const p = pipeline.value;
+    const pct = (n) => (p.filed ? Math.round((n / p.filed) * 100) : 0);
+    return [
+        { key: 'filed', label: 'Filed', count: p.filed, color: '#204888' },
+        { key: 'routed', label: 'Routed to an office', count: p.routed, color: '#3E6BB5' },
+        { key: 'acknowledged', label: 'Acknowledged by an office', count: p.acknowledged, color: '#68AFF1' },
+        { key: 'officesDone', label: 'Office part done', count: p.officesDone, color: '#FFC900' },
+        { key: 'completed', label: 'Completed by a supervisor', count: p.completed, color: '#21BA45' },
+    ].map(st => ({ ...st, pct: pct(st.count) }));
+});
+const completedShare = computed(() => (pipeline.value.filed ? Math.round((pipeline.value.completed / pipeline.value.filed) * 100) : 0));
+const meterColor = (rate) => (rate == null ? '#B8C2D4' : rate >= 85 ? '#21BA45' : rate >= 70 ? '#FFC900' : '#C10015');
+const deadlineMeters = computed(() => {
+    const sla = complaintData.value.slaCompliance || {};
+    const filed = pipeline.value.filed;
+    const extended = filed ? Math.round(((process_.value.extendedCount || 0) / filed) * 100) : 0;
+    return [
+        { label: 'acknowledged within 1 day', value: sla.ackRate ?? null, color: meterColor(sla.ackRate), sub: '' },
+        { label: 'resolved within 3 days (6 if extended)', value: sla.resolutionRate ?? null, color: meterColor(sla.resolutionRate), sub: '' },
+        { label: 'given the 3-day extension', value: extended, color: '#FFC900', sub: `${process_.value.extendedCount || 0} of ${filed} feedback, one extension each` },
+    ];
+});
+const FILED_HOW = [
+    { key: 'account', label: 'Citizen, signed in' },
+    { key: 'anonymous', label: 'Anonymous (signed in)' },
+    { key: 'staff', label: 'Filed by staff' },
+    { key: 'guest', label: 'Guest (earlier filings)' },
+];
+const filedHowSeries = computed(() => FILED_HOW.map(r => process_.value.filedHow?.[r.key] || 0));
+const filedHowOptions = computed(() => donutOptions(FILED_HOW.map(r => r.label)));
+
+const formatSpan = (days) => {
+    if (days == null) return '—';
+    const totalMinutes = days * 24 * 60;
+    if (totalMinutes < 60) return Math.round(totalMinutes) + 'm';
+    const totalHours = days * 24;
+    if (totalHours < 24) return (Math.round(totalHours * 10) / 10) + 'h';
+    return (Math.round(days * 10) / 10) + 'd';
+};
+
+// "needs your attention": the same waiting-on-someone counts the sidebar shows, plus the deadlines that are slipping
+const attnTone = (n, tone = 'bad') => (n > 0 ? 'ov-attn--' + tone : 'ov-attn--zero');
+const attnTiles = computed(() => [
+    { key: 'unreceived', route: 'complaint', icon: 'bi-inbox', tone: 'bad', count: navBadges.value.complaint, label: 'unreceived feedback', sub: 'waiting for an office' },
+    { key: 'ack', route: 'complaint', icon: 'bi-bell', tone: 'bad', count: complaintData.value.kpis.ackOverdueCount ?? 0, label: 'not acknowledged', sub: 'past the 1-day mark' },
+    { key: 'late', route: 'complaint', icon: 'bi-hourglass-bottom', tone: 'bad', count: complaintData.value.kpis.resolutionOverdueCount ?? 0, label: 'past the deadline', sub: '3 days, or 6 if extended' },
+    { key: 'soon', route: 'complaint', icon: 'bi-clock-history', tone: 'warn', count: process_.value.dueSoonCount ?? 0, label: 'due in 24 hours', sub: 'consider an extension' },
+    { key: 'approve', route: 'complaint', icon: 'bi-patch-check', tone: 'info', count: process_.value.awaitingApprovalCount ?? 0, label: 'awaiting approval', sub: 'offices done, not completed' },
+    { key: 'csm', route: 'feedback', icon: 'bi-clipboard-data', tone: 'info', count: navBadges.value.feedback, label: 'new CSM reports', sub: 'since you last looked' },
+    { key: 'comments', route: 'discussion', icon: 'bi-chat-dots', tone: 'info', count: navBadges.value.discussion, label: 'new comments', sub: 'on the discussions' },
+    { key: 'responses', route: 'poll', icon: 'bi-ui-checks', tone: 'info', count: navBadges.value.poll, label: 'new survey responses', sub: 'since you last looked' },
+]);
+
+// one card per module, with this period's figures
+const moduleCards = computed(() => [
+    {
+        key: 'feedback', route: 'complaint', icon: 'bi-chat-quote', title: 'Feedback', badge: navBadges.value.complaint,
+        description: 'Receive and address what residents report.',
+        stats: [
+            { value: complaintData.value.kpis.totalComplaints ?? 0, label: 'filed' },
+            { value: completedShare.value + '%', label: 'completed' },
+            { value: complaintData.value.slaCompliance?.resolutionRate != null ? complaintData.value.slaCompliance.resolutionRate + '%' : '—', label: 'on time' },
+        ],
+    },
+    {
+        key: 'csm', route: 'feedback', icon: 'bi-emoji-smile', title: 'CSM report', badge: navBadges.value.feedback,
+        description: 'Client satisfaction, from the kiosks and from staff.',
+        stats: [
+            { value: feedbackData.value.kpis.totalFeedback ?? 0, label: 'reports' },
+            { value: feedbackData.value.kpis.avgSatisfaction != null ? feedbackData.value.kpis.avgSatisfaction + '%' : '—', label: 'satisfied' },
+            { value: feedbackData.value.kpis.charterAwareRate != null ? feedbackData.value.kpis.charterAwareRate + '%' : '—', label: 'charter aware' },
+        ],
+    },
+    {
+        key: 'discussion', route: 'discussion', icon: 'bi-people', title: 'Discussion', badge: navBadges.value.discussion,
+        description: 'Open topics and hear from residents.',
+        stats: [
+            { value: discussionTotals.value.topics, label: 'topics' },
+            { value: discussionTotals.value.comments, label: 'comments' },
+            { value: discussionsRaw.value.filter(d => d.status === 'open' && !d.isExpired).length, label: 'open' },
+        ],
+    },
+    {
+        key: 'survey', route: 'poll', icon: 'bi-ui-checks', title: 'Survey', badge: navBadges.value.poll,
+        description: 'Ask residents several questions at once.',
+        stats: [
+            { value: pollTotals.value.polls, label: 'surveys' },
+            { value: pollTotals.value.votes, label: 'responses' },
+            { value: pollsRaw.value.filter(p => p.status === 'open' && !p.isExpired).length, label: 'open' },
+        ],
+    },
+]);
+
 /* charts */
 
 const filingsChartSeries = ref([]);
@@ -630,14 +763,18 @@ const statusBreakdownRows = computed(() => {
 });
 const statusBreakdownTotal = computed(() => statusBreakdownRows.value.reduce((sum, r) => sum + r.count, 0));
 
-const shareChartSeries = ref([]);
-const shareChartOptions = ref({
-    chart: { type: 'pie' },
-    labels: [],
-    colors: CHART_PALETTE,
+const DONUT_COLORS = ['#204888', '#FFC900', '#68AFF1', '#B8C2D4', '#3E6BB5', '#9A6B00'];
+const donutOptions = (labels = []) => ({
+    chart: { type: 'donut' },
+    labels,
+    colors: DONUT_COLORS,
     legend: { position: 'bottom', fontSize: '11px' },
-    dataLabels: { enabled: true },
+    dataLabels: { enabled: false },
+    stroke: { width: 2 },
+    plotOptions: { pie: { donut: { size: '68%', labels: { show: true, total: { show: true, label: 'Total', fontSize: '12px' } } } } },
 });
+const shareChartSeries = ref([]);
+const shareChartOptions = ref(donutOptions());
 
 // Intake channel mix for the "Clients" section — registered account vs. guest OTP vs. staff walk-in.
 const channelChartSeries = ref([]);
@@ -717,13 +854,13 @@ const applyOverviewCharts = () => {
         { name: 'Feedback', data: complaintCounts },
         { name: 'CSM Report', data: feedbackCounts },
         { name: 'Discussions', data: discussionCounts },
-        { name: 'Polls', data: pollCounts },
+        { name: 'Surveys', data: pollCounts },
     ];
     filingsChartOptions.value = { ...filingsChartOptions.value, xaxis: { ...filingsChartOptions.value.xaxis, categories } };
 
     engagementChartSeries.value = [
         { name: 'Discussion comments', data: commentCounts },
-        { name: 'Poll votes', data: voteCounts },
+        { name: 'Survey responses', data: voteCounts },
     ];
     engagementChartOptions.value = { ...engagementChartOptions.value, xaxis: { ...engagementChartOptions.value.xaxis, categories } };
 
@@ -744,14 +881,14 @@ const applyOverviewCharts = () => {
         discussionTotals.value.comments,
         pollTotals.value.votes,
     ];
-    shareChartOptions.value = { ...shareChartOptions.value, labels: ['Feedback', 'CSM Report', 'Discussion comments', 'Poll votes'] };
+    shareChartOptions.value = { ...shareChartOptions.value, labels: ['Feedback', 'CSM Report', 'Discussion comments', 'Survey responses'] };
 
     const ch = clientData.value.complaintsByChannel || {};
     channelChartSeries.value = [ch.account || 0, ch.otp || 0, ch.staff || 0];
 };
 
-const loadOverview = async () => {
-    overviewLoading.value = true;
+const loadOverview = async (opts = {}) => {
+    if (!opts?.quiet) overviewLoading.value = true;
     try {
         const params = { period: overviewPeriod.value, year: overviewYear.value };
         const requests = [
@@ -865,6 +1002,9 @@ const onIncomingMessage = (message) => {
     if (roster) roster.unreadCount = (roster.unreadCount || 0) + 1;
 };
 
+// the dashboard's counts and charts follow what happens in the modules it summarizes
+useLiveRefresh(['complaint', 'feedback', 'discussion', 'poll'], () => Promise.all([loadNavBadges(), loadOverview({ quiet: true })]));
+
 onMounted(() => {
     loadNavBadges();
     loadOverview();
@@ -878,6 +1018,11 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.hp-feel + .hp-feel { margin-top: 16px; }
+.hp-feel-bar { display: flex; height: 10px; margin-top: 6px; border-radius: 99px; overflow: hidden; background: #EDF1F7; }
+.hp-feel-bar > span { height: 100%; }
+.hp-feel-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 6px; font-size: 11.5px; color: #6B7A99; }
+.hp-feel-legend i { display: inline-block; width: 8px; height: 8px; margin-right: 5px; border-radius: 50%; }
 /* Same rail+main split as the Feedback/Complaint pages (.fp-shell/.fp-main/.fp-rail) — a grid
    column reserves the 380px on the right (even though the rail card inside it goes position:fixed
    below, taking it out of flow — the grid still keeps that space blank so .hp-main's content never
@@ -1179,4 +1324,61 @@ onUnmounted(() => {
         grid-template-columns: repeat(2, 1fr);
     }
 }
+
+/* the page's period bar and the module cards */
+.hp-controls {
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.hp-eyebrow-dark {
+    font-size: 11px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: #8493AC;
+    margin-bottom: 2px;
+}
+.hp-mod-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 12px;
+}
+.hp-mod {
+    --mod: #204888;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 16px 18px;
+    background: #FFFFFF;
+    border: 1px solid #E3EAF4;
+    border-top: 4px solid var(--mod);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: transform 160ms ease, box-shadow 160ms ease;
+}
+.hp-mod:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(32, 72, 136, .12); }
+.hp-mod--feedback { --mod: #68AFF1; }
+.hp-mod--csm { --mod: #4CAF7D; }
+.hp-mod--discussion { --mod: #DB812C; }
+.hp-mod--survey { --mod: #EEC336; }
+.hp-mod-top { display: flex; align-items: flex-start; gap: 12px; }
+.hp-mod-ico {
+    flex: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in srgb, var(--mod) 18%, white);
+    color: #16233A;
+}
+.hp-mod-title { font-size: 15px; font-weight: 800; color: #16233A; line-height: 1.2; }
+.hp-mod-desc { margin-top: 2px; font-size: 12px; line-height: 1.4; color: #8493AC; }
+/* the figures sit at the foot of the card; they wrap onto a second line instead of squeezing into one */
+.hp-mod-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); gap: 8px; margin-top: auto; }
+.hp-mod-stats > div { min-width: 0; padding: 8px 6px; border-radius: 10px; background: #F6F9FC; text-align: center; }
+.hp-mod-stats b { display: block; font-size: 17px; line-height: 1.15; color: #16233A; font-variant-numeric: tabular-nums; }
+.hp-mod-stats span { display: block; margin-top: 2px; font-size: 10px; line-height: 1.25; letter-spacing: .03em; text-transform: uppercase; color: #8493AC; overflow-wrap: anywhere; }
+.hp-mod-go { margin-top: -4px; display: flex; align-items: center; justify-content: flex-end; gap: 6px; font-size: 12px; font-weight: 700; color: #204888; }
 </style>

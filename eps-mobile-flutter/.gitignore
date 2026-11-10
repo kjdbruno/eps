@@ -18,6 +18,7 @@ pubspec.lock
 # Local config
 dart_define.json
 dart_define.device.json
+dart_define.usb.json
 dart_define.prod.json
 .env
 
@@ -30,3 +31,4 @@ dart_define.prod.json
 .idea/
 .vscode/
 .DS_Store
+dart_define.lan.json

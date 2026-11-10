@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your feedback was filed</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f6f9fc; font-family:'Segoe UI', Roboto, Arial, sans-serif; color:#1e2a44;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f6f9fc; padding:32px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:100%; max-width:600px; background-color:#ffffff; border:1px solid #e4eaf3; border-radius:16px; overflow:hidden;">
+
+          <!-- brand band -->
+          <tr>
+            <td style="background-color:#004EA8; background-image:linear-gradient(135deg,#00306B 0%,#004EA8 100%); padding:28px 32px;">
+              <div style="font-size:12px; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:#FDB813;">CSFLU</div>
+              <div style="font-size:22px; font-weight:800; color:#ffffff; line-height:1.25; padding-top:4px;">eParticipation System</div>
+              <div style="font-size:12px; color:#c9d8ef; padding-top:4px;">City Government of San Fernando, La Union</div>
+            </td>
+          </tr>
+
+          <!-- message -->
+          <tr>
+            <td style="padding:36px 40px 8px 40px;">
+              <h2 style="margin:0 0 10px 0; font-size:22px; line-height:1.3; color:#004EA8;">Your feedback was filed</h2>
+              <p style="margin:0; font-size:15px; line-height:1.65; color:#4c5c79;">Hello {{ name }}, a member of our staff has filed your feedback on your behalf. {{ intro }}</p>
+            </td>
+          </tr>
+
+          <!-- the feedback -->
+          <tr>
+            <td style="padding:20px 40px 8px 40px;">
+              <div style="background-color:#f6f9fc; border:1px solid #e4eaf3; border-radius:12px; padding:16px 20px;">
+                <div style="font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#8493ac;">Reference no.</div>
+                <div style="font-size:22px; font-weight:800; color:#1e2a44; letter-spacing:1px; padding:4px 0 12px 0;">{{ reference }}</div>
+                <div style="font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#8493ac;">Filed on</div>
+                <div style="font-size:14px; color:#1e2a44; padding:2px 0 12px 0;">{{ filedOn }}</div>
+                <div style="font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#8493ac;">Where it was sent</div>
+                <div style="font-size:14px; color:#1e2a44; padding:2px 0 12px 0;">{{ offices }}</div>
+                <div style="font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#8493ac;">What was reported</div>
+                <div style="font-size:14px; line-height:1.6; color:#1e2a44; padding-top:2px; white-space:pre-wrap;">{{ content }}</div>
+              </div>
+            </td>
+          </tr>
+
+          {{ credentials }}
+
+          <!-- steps -->
+          <tr>
+            <td style="padding:24px 40px 8px 40px;">
+              <div style="font-size:15px; font-weight:700; color:#004EA8; padding-bottom:8px;">{{ stepsTitle }}</div>
+              {{ steps }}
+            </td>
+          </tr>
+
+          <tr>
+            <td align="center" style="padding:16px 40px 8px 40px; font-size:14px; line-height:1.6; color:#6b7a99;">
+              {{ closing }}
+            </td>
+          </tr>
+
+          <!-- footer -->
+          <tr>
+            <td style="padding:8px 40px 32px 40px;">
+              <div style="border-top:1px solid #e4eaf3; padding-top:18px; font-size:12px; line-height:1.6; color:#8493ac; text-align:center;">
+                This is an automated message from the CSFLU eParticipation System. Please do not reply to it.<br>
+                &copy; City Government of San Fernando, La Union. All rights reserved.
+              </div>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

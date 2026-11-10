@@ -1,51 +1,51 @@
 <template>
-    <q-layout view="lHh Lpr lFf">
-        <q-header class="bg-white text-dark kl-header" bordered>
-            <q-toolbar class="kl-toolbar">
-                <router-link to="/" class="row items-center no-decoration">
-                    <img :src="citySeal" width="40" class="q-mr-sm" />
-                    <div>
-                        <div class="text-subtitle1 text-weight-bold">eParticipation System Kiosk</div>
+    <q-layout view="hHh lpr fFf" class="kfr-layout">
+        <q-page-container>
+            <!-- The whole kiosk is one rounded card on a dark surround: the top bar (who, the time, a way home)
+                 and, under it, whichever page the citizen is on. -->
+            <div class="kfr-page">
+                <div class="kfr-card">
+                    <div class="kfr-top">
+                        <router-link to="/" class="kfr-brand">
+                            <img :src="logo" alt="ePS" />
+                            <i class="brand-sep" />
+                            <span class="brand-sub">kiosk</span>
+                        </router-link>
+                        <div class="kfr-title gt-xs">eParticipation System</div>
+                        <div class="row items-center no-wrap q-gutter-md">
+                            <div class="kfr-clock"><b>{{ time }}</b><small>{{ day }}</small></div>
+                            <q-btn
+                                v-if="route.name !== 'index'"
+                                unelevated rounded color="primary" icon="bi-house-fill" label="Home" no-caps
+                                class="kfr-home" to="/"
+                            />
+                        </div>
                     </div>
-                </router-link>
-                <q-space />
-                <q-btn
-                    v-if="route.name !== 'index'"
-                    unelevated rounded color="primary" label="home" size="lg"
-                    class="q-px-lg" to="/"
-                />
-            </q-toolbar>
-        </q-header>
-
-        <q-page-container class="kl-page-container">
-            <router-view />
+                    <div class="kfr-body">
+                        <router-view />
+                    </div>
+                </div>
+            </div>
         </q-page-container>
     </q-layout>
 </template>
 
 <script setup>
+import { onBeforeUnmount, ref } from 'vue';
 import { useRoute } from 'vue-router';
-import citySeal from '../assets/epslogo.png';
+import logo from '../assets/epslogo.png';
 
 const route = useRoute();
-</script>
 
-<style scoped>
-/* Kiosk is a public touch terminal, always full-screen — larger header than a normal desktop
-   app's, and every interactive control on every page targets a comfortably tappable size. */
-.kl-header {
-    height: 76px;
-}
-.kl-toolbar {
-    height: 76px;
-    padding: 0 32px;
-}
-.no-decoration {
-    text-decoration: none;
-    color: inherit;
-}
-.kl-page-container {
-    background: #F6F9FC;
-    min-height: 100vh;
-}
-</style>
+// the clock in the top bar
+const time = ref('');
+const day = ref('');
+const tick = () => {
+    const d = new Date();
+    time.value = d.toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' });
+    day.value = d.toLocaleDateString('en-PH', { weekday: 'short', month: 'short', day: 'numeric' });
+};
+tick();
+const clock = setInterval(tick, 1000);
+onBeforeUnmount(() => clearInterval(clock));
+</script>

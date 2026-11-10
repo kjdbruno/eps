@@ -6,6 +6,8 @@ const sharp = require('sharp');
 const { User, Staff, Office } = require('../models');
 const { logActivity } = require('../utils/activityLog');
 const { getUserSocketIds } = require('../utils/connectedUsers');
+const { normalizePhone } = require('../middlewares/UserValidator');
+const { buildUserProfile } = require('../utils/userProfile');
 
 const DEFAULT_AVATAR = '/uploads/avatar.png';
 const UPLOADS_DIR = path.join(__dirname, '../public/uploads');
@@ -45,8 +47,19 @@ const getAllUsers = async (req, res) => {
     }
 };
 
+// One staff account with everything on file: the account and what they did in each module (see utils/userProfile.js)
+const getUserProfile = async (req, res) => {
+    try {
+        const profile = await buildUserProfile(parseInt(req.params.id, 10));
+        if (!profile) return res.status(404).json({ message: 'User not found.' });
+        res.json(profile);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
 const createUser = async (req, res) => {
-    const { firstname, lastname, username, password, role, officeId, avatar } = req.body;
+    const { firstname, lastname, username, password, role, officeId, avatar, phoneNo } = req.body;
     try {
         const userExist = await User.findOne({ where: { username } });
         if (userExist) {
@@ -62,6 +75,7 @@ const createUser = async (req, res) => {
             username,
             password: hashedPassword,
             role,
+            phoneNo: normalizePhone(phoneNo),
             avatar: avatar || DEFAULT_AVATAR,
             isActive: true
         });
@@ -89,7 +103,7 @@ const createUser = async (req, res) => {
 
 const updateUser = async (req, res) => {
     const { id } = req.params;
-    const { firstname, lastname, username, password, role, officeId, avatar } = req.body;
+    const { firstname, lastname, username, password, role, officeId, avatar, phoneNo } = req.body;
     try {
         const user = await User.findByPk(id);
         if (!user) {
@@ -108,6 +122,8 @@ const updateUser = async (req, res) => {
         }
 
         const updates = { firstname, lastname, username, role, avatar: avatar || user.avatar };
+        // typed: kept as 09XXXXXXXXX; left empty on an older account: it stays without one
+        if (phoneNo) updates.phoneNo = normalizePhone(phoneNo);
         if (password) {
             updates.password = await bcrypt.hash(password, 10);
         }
@@ -228,5 +244,5 @@ const uploadAvatar = async (req, res) => {
 // file didn't previously need until now.
 module.exports = (_io) => {
     io = _io;
-    return { getAllUsers, createUser, updateUser, disableUser, enableUser, uploadAvatar };
+    return { getAllUsers, getUserProfile, createUser, updateUser, disableUser, enableUser, uploadAvatar };
 };

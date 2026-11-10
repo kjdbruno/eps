@@ -6,6 +6,15 @@ const { body, validationResult } = require("express-validator");
 // this list only governs which values the role dropdown may submit.
 const STAFF_ROLES = ['workstation', 'admin', 'super', 'monitoring'];
 
+// 09XXXXXXXXX, +639XXXXXXXXX or 639XXXXXXXXX (spaces and dashes are ignored)
+const PH_MOBILE = /^(?:09|\+?639)\d{9}$/;
+const normalizePhone = (value) => {
+    const digits = String(value || '').replace(/[\s-]/g, '');
+    if (!PH_MOBILE.test(digits)) return null;
+    return `09${digits.slice(-9)}`;
+};
+exports.normalizePhone = normalizePhone;
+
 exports.validateForm = (isCreate = true) => [
     body("firstname")
         .trim()
@@ -28,6 +37,16 @@ exports.validateForm = (isCreate = true) => [
         .trim()
         .if((value) => !!value)
         .isLength({ min: 8 }).withMessage("Password must be at least 8 characters"),
+    // A Philippine mobile number: 09XXXXXXXXX, or +639XXXXXXXXX / 639XXXXXXXXX (kept as 09XXXXXXXXX, see normalizePhone). Needed
+    // to create an account; an older account without one can still be edited, but one that is typed has to be valid.
+    body("phoneNo")
+        .trim()
+        .if(() => isCreate)
+        .notEmpty().withMessage("Contact number is required"),
+    body("phoneNo")
+        .trim()
+        .if((value) => !!value)
+        .custom((value) => !!normalizePhone(value)).withMessage("Enter a Philippine mobile number, like 09171234567"),
     body("role")
         .trim()
         .notEmpty().withMessage("Role is required")

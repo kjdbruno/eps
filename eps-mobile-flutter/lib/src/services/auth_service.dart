@@ -51,7 +51,10 @@ class AuthService {
       '/citizen/resend',
       body: {'email': email},
     );
-    return asString(res.data?['message'], fallback: 'Verification code resent.');
+    return asString(
+      res.data?['message'],
+      fallback: 'Verification code resent.',
+    );
   }
 
   // ---- password reset (3 steps, mirrors ForgotPasswordPage.vue) -------------
@@ -106,6 +109,16 @@ class AuthService {
       body: {'email': email, 'password': password},
     );
     return _parse(res.data);
+  }
+
+  /// `POST /change-password` — the first login of an account that still has the temporary password
+  /// it was emailed. Throws [ApiException] when the current password is wrong or the new one is
+  /// rejected (same as the current one, or as the username).
+  Future<void> changePassword(String currentPassword, String newPassword) async {
+    await _api.post<dynamic>(
+      '/change-password',
+      body: {'currentPassword': currentPassword, 'newPassword': newPassword},
+    );
   }
 
   /// Best-effort server logout — the client clears its own state regardless.

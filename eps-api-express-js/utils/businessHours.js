@@ -1,6 +1,15 @@
 const moment = require('moment');
 const { Holiday } = require('../models');
 
+// The timeline every feedback is held to, counted in calendar days from the moment it is routed to
+// an office: the office acknowledges it within ACK_WINDOW_DAYS, then has RESOLUTION_WINDOW_DAYS to
+// resolve it (so it is due on day 4), and may ask ONCE for EXTENSION_DAYS more (day 7 at most).
+// There is no complexity tier any more — it is the same for every feedback.
+const ACK_WINDOW_DAYS = 1;
+const RESOLUTION_WINDOW_DAYS = 3;
+const EXTENSION_DAYS = 3;
+
+// Legacy (business-hour) figure — only the old demo seeder still reads it.
 const RECEIVE_WINDOW_HOURS = 24;
 
 const isWeekend = (m) => m.day() === 0 || m.day() === 6; // Sunday=0, Saturday=6
@@ -10,7 +19,8 @@ const isWeekend = (m) => m.day() === 0 || m.day() === 6; // Sunday=0, Saturday=6
 // a per-day loop.
 const loadHolidaySet = async () => {
     const holidays = await Holiday.findAll({
-        where: { isActive: true },
+        // a special working day is an ordinary working day: it never pushes a deadline
+        where: { isActive: true, category: { [require('sequelize').Op.ne]: 'working' } },
         attributes: ['date'],
         raw: true
     });
@@ -31,12 +41,11 @@ const addBusinessHours = (start, hours, holidaySet) => {
     return deadline;
 };
 
-// Computes the 24-business-hour acknowledgement deadline for a ComplaintOffice going active
-// `from` now (or a given moment). Frozen at call time — never recomputed retroactively.
-const computeReceiveDeadline = async (from = new Date()) => {
-    const holidaySet = await loadHolidaySet();
-    return addBusinessHours(moment(from), RECEIVE_WINDOW_HOURS, holidaySet).toDate();
-};
+// The acknowledgement deadline for a ComplaintOffice going active `from` now (or a given moment):
+// one calendar day. Frozen at call time — never recomputed retroactively.
+const computeReceiveDeadline = async (from = new Date()) => (
+    moment(from).add(ACK_WINDOW_DAYS, 'days').toDate()
+);
 
 // co: a ComplaintOffice-shaped object with isActive, receivedAt, receiveDeadline.
 // Purely derived from stored timestamps — never itself stored, so it can't go stale.
@@ -50,7 +59,8 @@ const getReceiveComplianceStatus = (co) => {
     return moment().isAfter(deadline) ? 'overdue' : 'awaiting';
 };
 
-// ARTA/EODB complexity tiering — target resolution time in business days per tier.
+// Legacy complexity tiers (business days) — no longer used for any deadline; only the old demo
+// seeder still reads this.
 const RESOLUTION_DAYS = { simple: 3, complex: 7, highly_technical: 20 };
 
 // Adds `days` whole business days to `start` (skipping weekends/holidays entirely rather than
@@ -68,14 +78,12 @@ const addBusinessDays = (start, days, holidaySet) => {
     return cursor;
 };
 
-// Computes the resolution deadline for a complaint classified as `complexity`, `from` now (or a
-// given moment). Returns null for an unrecognized/missing complexity. Frozen at call time.
-const computeResolutionDeadline = async (complexity, from = new Date()) => {
-    const days = RESOLUTION_DAYS[complexity];
-    if (!days) return null;
-    const holidaySet = await loadHolidaySet();
-    return addBusinessDays(moment(from), days, holidaySet).toDate();
-};
+// The resolution deadline for a feedback routed `from` now (or a given moment): the day-long
+// acknowledgement window plus the 3 days to resolve it. Frozen at call time; an extension moves the
+// stored date later by EXTENSION_DAYS (see ComplaintController.requestExtension).
+const computeResolutionDeadline = async (from = new Date()) => (
+    moment(from).add(ACK_WINDOW_DAYS + RESOLUTION_WINDOW_DAYS, 'days').toDate()
+);
 
 // complaint: a Complaint-shaped object with status, completedAt, resolutionDeadline.
 // A cancelled complaint is never judged for resolution timeliness, regardless of completedAt.
@@ -91,6 +99,9 @@ const getResolutionComplianceStatus = (complaint) => {
 };
 
 module.exports = {
+    ACK_WINDOW_DAYS,
+    RESOLUTION_WINDOW_DAYS,
+    EXTENSION_DAYS,
     RECEIVE_WINDOW_HOURS,
     RESOLUTION_DAYS,
     addBusinessHours,

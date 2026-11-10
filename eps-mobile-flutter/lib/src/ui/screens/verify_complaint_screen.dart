@@ -1,14 +1,25 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../api/api_exception.dart';
 import '../../services/complaint_service.dart';
+import '../../theme/app_theme.dart';
 import '../widgets/auth_scaffold.dart';
+import '../widgets/eps_ui.dart';
 import '../widgets/otp_field.dart';
+import '../widgets/eps_loader.dart';
 
 class VerifyComplaintScreen extends StatefulWidget {
-  const VerifyComplaintScreen({super.key});
+  const VerifyComplaintScreen({
+    super.key,
+    required this.scrollController,
+    required this.onDone,
+  });
+
+  final ScrollController scrollController;
+
+  /// "Done": close the sheet.
+  final VoidCallback onDone;
 
   @override
   State<VerifyComplaintScreen> createState() => _VerifyComplaintScreenState();
@@ -33,9 +44,9 @@ class _VerifyComplaintScreenState extends State<VerifyComplaintScreen> {
     try {
       final ref =
           await context.read<ComplaintService>().validateComplaintOtp(code);
-      setState(() => _referenceNo = ref);
+      if (mounted) setState(() => _referenceNo = ref);
     } on ApiException catch (e) {
-      setState(() => _error = e.message);
+      if (mounted) setState(() => _error = e.message);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -44,7 +55,9 @@ class _VerifyComplaintScreenState extends State<VerifyComplaintScreen> {
   @override
   Widget build(BuildContext context) {
     return AuthScaffold(
+      scrollController: widget.scrollController,
       title: 'Verify Feedback',
+      icon: Icons.verified_outlined,
       subtitle: 'Enter the one-time pin (OTP) emailed to you after filing.',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -52,56 +65,89 @@ class _VerifyComplaintScreenState extends State<VerifyComplaintScreen> {
           OtpField(key: _otpKey, onCompleted: (_) => _submit()),
           if (_error != null) ...[
             const SizedBox(height: 12),
-            Text(
-              _error!,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
+            ErrorBox(_error!),
           ],
           const SizedBox(height: 20),
           FilledButton(
             onPressed: _loading ? null : _submit,
             child: _loading
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
+                ? const DotsSpinner(color: Color(0xFF1D1D1D))
                 : const Text('Submit'),
           ),
           if (_referenceNo != null) ...[
             const SizedBox(height: 24),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    Text(
-                      'REFERENCE NO.',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey.shade600,
-                        fontWeight: FontWeight.w700,
-                      ),
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.18),
+                      shape: BoxShape.circle,
                     ),
-                    const SizedBox(height: 4),
-                    SelectableText(
-                      _referenceNo!,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    child: const Icon(
+                      Icons.check_rounded,
+                      color: Colors.white,
+                      size: 30,
                     ),
-                    const SizedBox(height: 8),
-                    TextButton(
-                      onPressed: () => context.push('/track'),
-                      child: const Text('Track this feedback →'),
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'Feedback verified',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 14),
+                  const Text(
+                    'YOUR REFERENCE NO.',
+                    style: TextStyle(
+                      color: AppTheme.secondary,
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  SelectableText(
+                    _referenceNo!,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Save this — you will need it, with your code, to add the feedback to your account.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12.5,
+                      height: 1.45,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppTheme.secondary,
+                      foregroundColor: const Color(0xFF1D1D1D),
+                    ),
+                    onPressed: widget.onDone,
+                    child: const Text('Done'),
+                  ),
+                ],
               ),
             ),
           ],

@@ -1,109 +1,65 @@
 <template>
-    <div>
-        <div class="q-mb-md" v-if="mode === 'guest'">
-            <q-checkbox v-model="isAnonymously" unchecked-icon="bi-check-circle" checked-icon="bi-check-circle-fill" label="Report Anonymously (I-check ang box kung ayaw magpakilala sa reklamo)" />
-        </div>
-        <!-- This block only ever renders when NOT anonymous (see the v-if) — the "optional"
-             labels used to say that unconditionally, contradicting validate() below (and now the
-             backend too, see ComplaintValidator.validateForm) which has always required both
-             once anonymity is off. -->
-        <div class="row q-col-gutter-xs q-mb-md" v-if="mode === 'guest' && !isAnonymously">
-            <div class="col-12 col-sm-6">
-                <div class="row q-mb-xs">
-                    <span class="text-caption text-uppercase" :class="FormErrors.firstname.type ? 'text-negative' : 'text-grey'">firstname</span>
-                    <q-space />
-                    <span class="text-caption text-uppercase text-grey q-mr-lg">mandatory</span>
-                </div>
-                <q-input outlined v-model="firstname" label="Enter Firstname" :error="FormErrors.firstname.type" no-error-icon />
-            </div>
-            <div class="col-12 col-sm-6">
-                <div class="row q-mb-xs">
-                    <span class="text-caption text-uppercase" :class="FormErrors.lastname.type ? 'text-negative' : 'text-grey'">lastname</span>
-                    <q-space />
-                    <span class="text-caption text-uppercase text-grey q-mr-lg">mandatory</span>
-                </div>
-                <q-input outlined v-model="lastname" label="Enter Lastname" :error="FormErrors.lastname.type" no-error-icon />
-            </div>
-        </div>
-        <div class="row q-col-gutter-xs" v-if="mode === 'guest'">
-            <div class="col-12 col-sm-6">
-                <div class="row q-mb-xs">
-                    <span class="text-caption text-uppercase text-grey">email</span>
-                    <q-space />
-                    <span class="text-caption text-uppercase text-grey q-mr-lg">mandatory</span>
-                </div>
-                <q-input outlined v-model="email" label="Enter Email" :error="FormErrors.email.type" no-error-icon />
-            </div>
-            <div class="col-12 col-sm-6">
-                <div class="row q-mb-xs">
-                    <span class="text-caption text-uppercase text-grey">contact no.</span>
-                    <q-space />
-                    <span class="text-caption text-uppercase text-grey q-mr-lg">mandatory</span>
-                </div>
-                <q-input outlined v-model="contactNo" label="Enter Contact No." :error="FormErrors.contactNo.type" no-error-icon />
-            </div>
-        </div>
-        <q-separator class="q-my-lg" v-if="mode === 'guest'"/>
-        <div class="q-mb-md">
-            <div class="row q-mb-xs">
-                <span class="text-caption text-uppercase text-grey">summary of feedback</span>
-                <q-space />
-                <span class="text-caption text-uppercase text-grey q-mr-lg">mandatory</span>
-            </div>
-            <q-input outlined v-model="complaint" label="Enter Feedback" type="textarea" :error="FormErrors.complaint.type" no-error-icon />
-            <div class="text-caption text-grey q-mt-xs">
-                <q-icon name="bi-info-circle" size="xs" class="q-mr-xs" />
-                We'll route this to the right department automatically based on what you describe here.
-            </div>
-        </div>
-        <div class="q-mb-md">
-            <div class="row q-mb-xs">
-                <span class="text-caption text-uppercase" :class="FormErrors.location.type ? 'text-negative' : 'text-grey'">location</span>
-                <q-space />
-                <span class="text-caption text-uppercase text-grey q-mr-lg">mandatory</span>
-            </div>
-            <!-- Grabbed automatically as soon as this form loads (see captureLocation/onMounted) —
-                 no button to tap first. Only a denied/failed permission needs a manual retry. -->
-            <div class="row items-center q-gutter-sm" v-if="locationStatus === 'loading'">
-                <q-spinner-ios size="1.2em" color="primary" />
-                <span class="text-caption text-grey">Getting your location&hellip;</span>
-            </div>
-            <div class="row items-center q-gutter-sm text-positive" v-else-if="locationStatus === 'granted'">
-                <q-icon name="bi-geo-alt-fill" size="1.1em" />
-                <span class="text-caption">Location captured.</span>
-            </div>
-            <div class="row items-center q-gutter-sm text-negative" v-else>
-                <q-icon name="bi-exclamation-triangle-fill" size="1.1em" />
-                <span class="text-caption">Location access is required to file feedback. Please allow it and try again.</span>
-                <q-btn flat dense no-caps size="sm" color="primary" label="try again" @click="captureLocation" />
-            </div>
-        </div>
-        <div class="row q-col-gutter-sm">
-            <div class="col-12 col-sm-6">
-                <div class="row q-mb-xs">
-                    <span class="text-caption text-uppercase text-grey">evidence</span>
-                    <q-space />
-                    <span class="text-caption text-uppercase text-grey q-mr-lg">optional</span>
-                </div>
-                <q-file outlined v-model="file" counter use-chips :counter-label="counterLabelFn" max-files="5" accept="image/*" multiple label="Upload Evidence (up to 5 photos)">
-                    <template v-slot:prepend>
-                        <q-icon name="attach_file" />
-                    </template>
-                </q-file>
-            </div>
-        </div>
-        <div class="q-mt-lg" v-if="mode === 'guest'">
-            <div class="text-caption text-uppercase">disclaimer</div>
-            <div class="text-caption text-grey">Para sa gustong maging anonymous sa kanilang reklamo, ang inyong email at contact number ay gagamitin lamang sa pagpapadala ng One Time Pin (OTP) upang kayo ay makatanggap ng Reference Number mula sa ePS, kapag ang inyong reklamo ay naangkop. Aming tinitiyak na ang inyong personal na impormasyon o pagkakakilanlan ay ligtas at kompindensyal.</div>
-            <div class="text-caption text-uppercase q-mt-sm">data privacy notice</div>
-            <div class="text-caption text-grey">Ang anumang impormasyon na aming makukuha ay gagamitin sa transaksyon na ito at sa pakikipag-ugnayan sa ePS at sa mga susunod pang mga hakbang tungkol sa inyong reklamo, alinsunod sa Data Privacy Act at sa aming Data Privacy Policy. Ang pagpapatuloy ay nangangahulugan ng inyong pagsang-ayon.</div>
-        </div>
+    <div class="cf">
+        <!-- ===== who is reporting: always the signed-in citizen; "file anonymously" hides only the person ===== -->
+        <section class="cf-sec">
+            <label class="cf-anon" :class="{ 'cf-anon--on': isAnonymously }">
+                <span class="cf-anon-ico"><q-icon name="bi-incognito" /></span>
+                <span class="cf-anon-t">
+                    <b>File anonymously</b>
+                    <small>Hides only you: your name is not shown to the offices or the staff. What happened, where, and your photos are handled as usual, and you can still follow it from My feedback.</small>
+                    <small class="text-grey-6">I-check ang box kung ayaw magpakilala sa reklamo.</small>
+                </span>
+                <q-toggle v-model="isAnonymously" color="primary" />
+            </label>
+        </section>
 
-        <!-- Modal contexts (ComplaintPage.vue's "file a complaint" dialog) hide this and put
-             their own submit button in a pinned footer instead, calling submit() via a template
-             ref — see hideSubmit below. FileComplaintPage.vue (a full page, not a modal) keeps
-             this default, in-flow button as-is. -->
-        <q-btn v-if="!hideSubmit" class="full-width q-mt-lg" unelevated color="primary" size="lg" label="submit feedback" @click="submit"/>
+        <!-- ===== what happened ===== -->
+        <section class="cf-sec">
+            <div class="cf-sec-h"><span>1</span>What happened</div>
+            <div class="cf-field">
+                <div class="cf-label" :class="{ 'cf-label--err': FormErrors.complaint.type }">Summary of your feedback <i>required</i></div>
+                <q-input
+                    outlined v-model="complaint" type="textarea" rows="5" counter maxlength="2000"
+                    placeholder="Tell us what is wrong, where, and since when..."
+                    :error="FormErrors.complaint.type" no-error-icon
+                />
+            </div>
+            <div class="cf-hint">
+                <q-icon name="bi-signpost-split" size="18px" />
+                <span>No category to pick — we read what you write and send it to the right department automatically.</span>
+            </div>
+        </section>
+
+        <!-- ===== where ===== -->
+        <section class="cf-sec">
+            <div class="cf-sec-h"><span>2</span>Where</div>
+            <!-- Grabbed automatically as soon as this form loads (see captureLocation/onMounted) — no
+                 button to tap first. Only a denied/failed permission needs a manual retry. -->
+            <div class="cf-loc" v-if="locationStatus === 'loading'">
+                <q-spinner-ios size="1.4em" color="primary" />
+                <div><b>Getting your location&hellip;</b><small>Please allow location access when your browser asks.</small></div>
+            </div>
+            <div class="cf-loc cf-loc--ok" v-else-if="locationStatus === 'granted'">
+                <q-icon name="bi-geo-alt-fill" size="1.4em" />
+                <div><b>Location captured</b><small>It is attached to your feedback so the office can find the place.</small></div>
+            </div>
+            <div class="cf-loc cf-loc--bad" v-else>
+                <q-icon name="bi-exclamation-triangle-fill" size="1.4em" />
+                <div><b>Location access is required</b><small>Please allow it in your browser, then try again.</small></div>
+                <q-btn unelevated rounded no-caps size="sm" color="primary" label="Try again" @click="captureLocation" />
+            </div>
+        </section>
+
+        <!-- ===== evidence ===== -->
+        <section class="cf-sec">
+            <div class="cf-sec-h"><span>3</span>Evidence <em>optional</em></div>
+            <FileDrop v-model="file" :max="5" hint="up to 5 photos" />
+        </section>
+
+        <!-- Modal contexts (ComplaintPage.vue's "file feedback" dialog) hide this and put their own
+             submit button in the pinned footer instead, calling submit() via a template ref — see
+             hideSubmit. a page that is not a modal keeps this in-flow button. -->
+        <q-btn v-if="!hideSubmit" class="full-width q-mt-lg" unelevated rounded no-caps color="primary" size="lg" icon-right="bi-send" label="Submit feedback" @click="submit" />
 
         <q-inner-loading :showing="loading">
             <q-spinner-ios color="primary" size="md"/>
@@ -113,38 +69,30 @@
 </template>
 
 <script setup>
+import FileDrop from 'src/components/FileDrop.vue';
 import { ref, reactive, onMounted } from 'vue';
 import { api } from 'src/boot/axios';
 
-const props = defineProps({
-    mode: { type: String, default: 'guest' }, // 'guest' | 'account'
+defineProps({
     hideSubmit: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(['submitted']);
 
 const isAnonymously = ref(false);
-const firstname = ref('');
-const lastname = ref('');
-const email = ref('');
-const contactNo = ref('');
 const complaint = ref('');
 const file = ref([]);
 const loading = ref(false);
 
 const FormErrors = reactive({
-    firstname: { type: null, msg: '' },
-    lastname: { type: null, msg: '' },
-    email: { type: null, msg: '' },
-    contactNo: { type: null, msg: '' },
     complaint: { type: null, msg: '' },
     location: { type: null, msg: '' },
 });
 
 /* -------------------- location (mandatory) -------------------- */
 // Grabbed the moment this form mounts — no "use my location" button to tap first. The backend
-// requires both latitude/longitude on every citizen-filed complaint (guest OTP and signed-in
-// account alike — see ComplaintValidator.validateForm / ComplaintController.createAccountComplaint),
+// requires both latitude/longitude on every citizen-filed complaint (see
+// ComplaintController.createAccountComplaint),
 // so a denied/failed/unsupported browser permission blocks submit until they retry and allow it.
 const latitude = ref(null);
 const longitude = ref(null);
@@ -184,37 +132,6 @@ const validate = () => {
 
     Object.keys(FormErrors).forEach(key => { FormErrors[key] = { type: null, msg: '' }; });
 
-    if (props.mode === 'guest' && !isAnonymously.value) {
-        if (!firstname.value) {
-            FormErrors.firstname = { type: true, msg: 'firstname is required!' };
-            isError = true;
-        }
-        if (!lastname.value) {
-            FormErrors.lastname = { type: true, msg: 'lastname is required!' };
-            isError = true;
-        }
-    }
-
-    if (props.mode === 'guest') {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!email.value) {
-            FormErrors.email = { type: true, msg: 'email is required!' };
-            isError = true;
-        } else if (!emailRegex.test(email.value)) {
-            FormErrors.email = { type: true, msg: 'Invalid email format!' };
-            isError = true;
-        }
-
-        const phoneRegex = /^(09|\+639)\d{9}$/;
-        if (!contactNo.value) {
-            FormErrors.contactNo = { type: true, msg: 'Contact no. is required!' };
-            isError = true;
-        } else if (!phoneRegex.test(contactNo.value)) {
-            FormErrors.contactNo = { type: true, msg: 'Invalid contact no. format!' };
-            isError = true;
-        }
-    }
-
     if (!complaint.value) {
         FormErrors.complaint = { type: true, msg: 'feedback is required!' };
         isError = true;
@@ -237,13 +154,8 @@ const submit = async () => {
     loading.value = true;
     try {
         const form = new FormData();
-        if (props.mode === 'guest') {
-            form.append('isAnonymous', isAnonymously.value);
-            form.append('firstname', firstname.value);
-            form.append('lastname', lastname.value);
-            form.append('email', email.value);
-            form.append('contactNo', contactNo.value);
-        }
+        // "File anonymously": the offices and staff do not see who filed it
+        form.append('isAnonymous', isAnonymously.value);
         form.append('content', complaint.value);
         form.append('latitude', latitude.value);
         form.append('longitude', longitude.value);
@@ -253,15 +165,14 @@ const submit = async () => {
             }
         }
 
-        const endpoint = props.mode === 'guest' ? '/complaint/otp/send' : '/complaint/account';
-        const response = await api.post(endpoint, form, {
+        const response = await api.post('/complaint/account', form, {
             headers: { 'Content-Type': 'multipart/form-data' }
         });
 
-        emit('submitted', { mode: props.mode, data: response.data });
+        emit('submitted', { data: response.data });
     } catch (e) {
         console.error(e);
-        emit('submitted', { mode: props.mode, error: e });
+        emit('submitted', { error: e });
     } finally {
         loading.value = false;
     }
@@ -271,3 +182,43 @@ const submit = async () => {
 // ComplaintPage.vue's "file a complaint" dialog).
 defineExpose({ submit, loading });
 </script>
+
+<style scoped>
+.cf { position: relative; }
+.cf-sec { margin-bottom: 26px; }
+.cf-sec-h { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #4C5C79; }
+.cf-sec-h > span { flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--q-primary); color: #fff; font-size: 12px; display: inline-flex; align-items: center; justify-content: center; letter-spacing: 0; }
+.cf-sec-h::after { content: ''; flex: 1; height: 1px; background: #E4EAF3; order: 1; }
+.cf-sec-h em { order: 2; font-style: normal; font-weight: 600; letter-spacing: .04em; text-transform: none; color: #8493AC; }
+
+.cf-grid { display: grid; gap: 14px 16px; grid-template-columns: 1fr; margin-top: 14px; }
+@media (min-width: 600px) { .cf-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.cf-grid:first-of-type { margin-top: 14px; }
+.cf-label { margin: 0 0 6px 4px; font-size: 12px; font-weight: 700; color: #4C5C79; }
+.cf-label i { font-style: normal; font-weight: 500; color: #8493AC; margin-left: 6px; }
+.cf-label--err { color: var(--q-negative); }
+.cf-err { margin: 4px 0 0 6px; font-size: 11.5px; color: var(--q-negative); }
+
+/* the anonymous switch: a whole tile you can tap */
+.cf-anon { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border: 1px solid #DCE4F0; border-radius: 14px; background: #F6F9FC; cursor: pointer; transition: border-color .15s, background .15s; }
+.cf-anon--on { border-color: var(--q-primary); background: rgba(32, 72, 136, .06); }
+.cf-anon-ico { flex: none; width: 42px; height: 42px; border-radius: 12px; background: #E5EEFC; color: var(--q-primary); display: flex; align-items: center; justify-content: center; font-size: 22px; }
+.cf-anon-t { flex: 1; min-width: 0; }
+.cf-anon-t b { display: block; font-size: 14px; color: #1E2A44; }
+.cf-anon-t small { display: block; margin-top: 2px; font-size: 12px; line-height: 1.45; color: #6B7A99; }
+
+.cf-hint { display: flex; gap: 10px; align-items: flex-start; margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: #F2F6FD; border: 1px solid #DCE5F3; font-size: 12.5px; line-height: 1.5; color: #4C5C79; }
+.cf-hint .q-icon { flex: none; margin-top: 1px; color: var(--q-primary); }
+
+/* the location, as a status card */
+.cf-loc { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 14px; background: #F6F9FC; border: 1px solid #DCE4F0; color: #4C5C79; }
+.cf-loc > div { flex: 1; min-width: 0; }
+.cf-loc b { display: block; font-size: 13.5px; color: #1E2A44; }
+.cf-loc small { display: block; margin-top: 2px; font-size: 12px; color: #6B7A99; }
+.cf-loc--ok { background: #E4F6EA; border-color: #BFE6CC; color: #1C6B35; }
+.cf-loc--bad { background: #FCE8E6; border-color: #F3C4BE; color: #A52E22; }
+
+.cf-notice { border: 1px solid #E4EAF3; border-radius: 14px; overflow: hidden; background: #fff; }
+.cf-notice :deep(.q-item) { font-size: 13px; font-weight: 600; color: #4C5C79; }
+.cf-notice-b { padding: 0 16px 14px; }
+</style>

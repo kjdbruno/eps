@@ -35,8 +35,7 @@ class OtpFieldState extends State<OtpField> {
   @override
   void initState() {
     super.initState();
-    _controllers =
-        List.generate(widget.length, (_) => TextEditingController());
+    _controllers = List.generate(widget.length, (_) => TextEditingController());
     _nodes = List.generate(widget.length, (_) => FocusNode());
     // Selects this box's existing digit whenever it gains focus, so typing a new one REPLACES
     // it instead of appending after it. Needed now that every box accepts up to `length`
@@ -93,26 +92,36 @@ class OtpFieldState extends State<OtpField> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(widget.length, (i) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: SizedBox(
-            width: 46,
-            child: TextField(
-              controller: _controllers[i],
-              focusNode: _nodes[i],
-              textAlign: TextAlign.center,
-              keyboardType: TextInputType.number,
-              style:
-                  const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-              // Every box (not just the first) accepts up to the full code's length — that's
-              // what lets a paste land correctly no matter which box happened to have focus;
-              // _onChanged's raw.length > 1 branch below is what actually catches and
-              // distributes it. The select-on-focus listener above stops normal single-digit
-              // typing into an already-filled box from being misread the same way.
-              maxLength: widget.length,
-              decoration: const InputDecoration(counterText: ''),
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              onChanged: (v) => _onChanged(i, v),
+        // each box takes an equal share of the row (up to 52 wide), so six always fit a phone
+        return Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 52),
+                child: TextField(
+                  controller: _controllers[i],
+                  focusNode: _nodes[i],
+                  textAlign: TextAlign.center,
+                  keyboardType: TextInputType.number,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  // Every box (not just the first) accepts up to the full code's length — that's
+                  // what lets a paste land correctly no matter which box happened to have focus;
+                  // _onChanged's raw.length > 1 branch below is what actually catches and
+                  // distributes it. The select-on-focus listener above stops normal single-digit
+                  // typing into an already-filled box from being misread the same way.
+                  maxLength: widget.length,
+                  decoration: const InputDecoration(
+                    counterText: '',
+                    contentPadding: EdgeInsets.symmetric(vertical: 17),
+                  ),
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  onChanged: (v) => _onChanged(i, v),
+                ),
+              ),
             ),
           ),
         );

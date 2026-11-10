@@ -23,6 +23,7 @@ module.exports = (UserController) => {
     // that role). This used to be verifyToken-only, which let ANY authenticated account (including
     // workstation) create/promote/disable any user, itself included.
     router.get('/', verifyToken, requireRole('super'), UserController.getAllUsers);
+    router.get('/:id/profile', verifyToken, requireRole('super'), UserController.getUserProfile);
     router.post('/', verifyToken, requireRole('super'), validateForm(true), UserController.createUser);
     router.post('/:id/update', verifyToken, requireRole('super'), validateForm(false), UserController.updateUser);
     router.post('/:id/disable', verifyToken, requireRole('super'), UserController.disableUser);

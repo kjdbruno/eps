@@ -4,14 +4,18 @@ const fs = require('fs');
 const path = require('path');
 const sharp = require('sharp');
 const transporter = require('../utils/mailer');
+const mailFrom = require('../utils/mailFrom');
 const otpGenerator = require('../utils/otp');
 const { Complaint, ComplaintDetail, ComplaintOffice, ComplaintFile, User, Office, Notification, Staff, Citizen, Response, ResponseFile, ResponseRating, ComplaintHistory } = require('../models');
 const { logHistory, resolveActorLabel, resolveCitizenActorLabel } = require('../utils/complaintHistory');
-const { computeReceiveDeadline, getReceiveComplianceStatus, computeResolutionDeadline, getResolutionComplianceStatus, RESOLUTION_DAYS } = require('../utils/businessHours');
+const { computeReceiveDeadline, getReceiveComplianceStatus, computeResolutionDeadline, getResolutionComplianceStatus, EXTENSION_DAYS } = require('../utils/businessHours');
 const { askLLM, hasLLM } = require('../utils/llm');
+const { tagComplaint, backfillSentiments } = require('../utils/sentiment');
+let sentimentRun = { running: false };
 const { getCompletionSuggestion } = require('../utils/completionSuggestion');
 const { pushNotifications, broadcastComplaintsChanged: broadcastChanged } = require('../utils/notifySocket');
 const { notifyComplainant } = require('../utils/notifyComplainant');
+const { provisionCitizenAccount, sendStaffFiledEmail } = require('../utils/staffFiledAccount');
 
 let io; // Declare io variable
 
@@ -70,11 +74,11 @@ const saveComplaintFiles = async (files, complaintId) => {
 // a global broadcast. Best-effort: the complaint itself is already committed by the time this
 // runs, so a notification failure here must never bubble up and turn a successful submission into
 // a 500 for the citizen.
-const notifyAdmins = async (content) => {
+const notifyAdmins = async (content, exceptUserId = null) => {
     try {
         const users = await User.findAll({
             include: [{ model: Staff, as: 'staff' }],
-            where: { role: { [Op.in]: ['super', 'admin'] } }
+            where: { role: { [Op.in]: ['super', 'admin'] }, ...(exceptUserId ? { id: { [Op.ne]: exceptUserId } } : {}) }
         });
         for (const user of users) {
             await Notification.create({ receiverId: user.id, content });
@@ -105,37 +109,17 @@ const notifyOfficeStaff = async (complaintId, content) => {
     }
 };
 
-// Emails each office and notifies its staff that a complaint has landed in their queue.
-// Best-effort per office: one office's mailer hiccup shouldn't stop the others from being notified,
-// and never blocks the routing decision that already happened by the time this runs.
-const notifyOffices = async (offices) => {
-    for (const office of offices) {
-        try {
-            const templatePath = path.join(__dirname, '../templates/complaint.html');
-            const html = fs.readFileSync(templatePath, 'utf8');
-
-            await transporter.sendMail({
-                from: `"CSFLU - Complaint Hotline" <${process.env.MAIL_USER}>`,
-                to: office.email,
-                subject: 'New Complaint',
-                html
-            });
-
-            const staffs = await Staff.findAll({ where: { officeId: office.id } });
-            for (const staff of staffs) {
-                await Notification.create({ receiverId: staff.userId, content: 'New feedback assigned to your office' });
-                await pushNotifications(io, staff.userId);
-            }
-        } catch (error) {
-            console.error(`Failed to notify office ${office.id} of new complaint:`, error);
-        }
-    }
-};
+// What the supervisors (super and admin) are told about a feedback, and nothing more: that it was routed to an office, and that it
+// is unassigned and waits for them. Nobody is sent a "new feedback" notice at filing, and the offices and their workstations are not
+// sent one when a feedback lands in their queue either: they find it in their list (and in the "feedback to receive" count).
+const officeCodes = (list) => list.map(o => (o.office || o).alias || (o.office || o).name).filter(Boolean).join(', ');
+const notifyRouted = (complaint, offices, by = null, exceptUserId = null) => notifyAdmins(
+    `Feedback ${complaint.referenceNo} was routed to ${officeCodes(offices)}${by ? ` by ${by}` : ''}.`,
+    exceptUserId
+);
 
 // Signals the internal desk's ComplaintPage to re-fetch (see utils/notifySocket).
 const broadcastComplaintsChanged = (reason) => broadcastChanged(io, reason);
-
-const VALID_COMPLEXITIES = ['simple', 'complex', 'highly_technical'];
 
 // Pulls a complaint's saved evidence photos back out as vision-ready { mediaType, data } pairs
 // (capped — classification is a cheap routing step, not a full evidence review, and the photos
@@ -156,15 +140,14 @@ const loadComplaintImages = async (complaintId) => {
         .filter(Boolean);
 };
 
-// Reads a complaint's free-text content (plus any evidence photos), matches it against every
-// active office's stated mandate to decide who's responsible, and classifies its ARTA/EODB
-// complexity tier — all in one call. Returns { complexity: null, matches: [] } (never persists
-// anything) whenever matching can't run: no API key configured, no office has a mandate set yet,
-// or the model can't find a confident office match (complexity may still come back set even
-// then). Pure/read-only, so it also backs the staff-facing "suggest an office" preview (see
-// suggestOffice below) as well as auto-assignment on filing.
+// Reads a complaint's free-text content (plus any evidence photos) and matches it against every
+// active office's stated mandate to decide who's responsible. Returns { matches: [] } (never
+// persists anything) whenever matching can't run: no API key configured, no office has a mandate
+// set yet, or the model can't find a confident office match. Pure/read-only, so it also backs the
+// staff-facing "suggest an office" preview (see suggestOffice below) as well as auto-assignment on
+// filing. (It no longer rates how complex a feedback is: every feedback has the same timeline.)
 const matchOfficesToContent = async (content, images = []) => {
-    const empty = { complexity: null, matches: [] };
+    const empty = { matches: [] };
     if (!hasLLM() || !content) return empty;
 
     const offices = await Office.findAll({
@@ -179,31 +162,19 @@ const matchOfficesToContent = async (content, images = []) => {
 
     try {
         const raw = await askLLM({
-            system: 'You route citizen complaints to the city department(s) responsible for them, and ' +
-                'classify how complex the request is to resolve, based strictly on each department\'s ' +
-                'stated mandate below — there is no category system, match the complaint\'s content ' +
-                'directly to a mandate. Reply with ONLY a JSON object, no other text and no markdown ' +
-                'fences, in exactly this shape: {"complexity": "simple"|"complex"|"highly_technical", ' +
-                '"offices": [{"officeId": <number>, "reason": "<one short sentence tying the complaint ' +
-                'to that department\'s mandate>"}]}. Complexity guide — "simple": routine, ' +
-                'straightforward, resolvable with standard/minor action (e.g. a single pothole, a missed ' +
-                'garbage pickup, a document copy request). "complex": needs coordination, inspection, or ' +
-                'multiple steps (e.g. recurring flooding, a permit dispute, a multi-household drainage ' +
-                'issue). "highly_technical": needs specialized expertise or engineering/legal review ' +
-                '(e.g. structural building safety, environmental contamination, large-scale ' +
-                'infrastructure failure). Usually pick just one department for "offices"; only include ' +
-                'more than one when the complaint genuinely spans multiple mandates. Always include ' +
-                '"complexity" even when nothing matches — reply {"complexity": "...", "offices": []} in ' +
-                'that case, never an empty array on its own.' +
+            system: 'You route citizen complaints to the city department(s) responsible for them, based ' +
+                'strictly on each department\'s stated mandate below — there is no category system, ' +
+                'match the complaint\'s content directly to a mandate. Reply with ONLY a JSON object, ' +
+                'no other text and no markdown fences, in exactly this shape: {"offices": ' +
+                '[{"officeId": <number>, "reason": "<one short sentence tying the complaint to that ' +
+                'department\'s mandate>"}]}. Usually pick just one department; only include more than ' +
+                'one when the complaint genuinely spans multiple mandates. When nothing matches, reply ' +
+                '{"offices": []}.' +
                 (images.length
-                    ? ' Photo evidence is attached — weigh it alongside the text when judging severity ' +
-                        'and scope: visible structural damage, a large affected area, or safety hazards ' +
-                        'can push the complexity up (e.g. to "complex" or "highly_technical") even if the ' +
-                        'written description alone reads as minor, and a photo showing the issue is minor ' +
-                        'in scope can keep it at "simple". The photos can also help you pick the right ' +
-                        'department when the text is ambiguous.'
+                    ? ' Photo evidence is attached — the photos can help you pick the right department ' +
+                        'when the text is ambiguous.'
                     : ''),
-            prompt: `Departments (id: name — mandate):\n${officeList}\n\nComplaint:\n"""${content}"""`,
+            prompt: `Departments (id: name — mandate):\n${officeList}\n\nComplaint:\n\"\"\"${content}\"\"\"`,
             maxTokens: 600,
             images
         }) || '{}';
@@ -220,7 +191,6 @@ const matchOfficesToContent = async (content, images = []) => {
         }
         if (!picks || typeof picks !== 'object' || Array.isArray(picks)) return empty;
 
-        const complexity = VALID_COMPLEXITIES.includes(picks.complexity) ? picks.complexity : null;
         const offerings = Array.isArray(picks.offices) ? picks.offices : [];
 
         const officeById = new Map(offices.map(o => [o.id, o]));
@@ -237,7 +207,7 @@ const matchOfficesToContent = async (content, images = []) => {
             });
         }
 
-        return { complexity, matches };
+        return { matches };
     } catch (error) {
         console.error('Complaint office matching failed:', error);
         return empty;
@@ -248,30 +218,46 @@ const matchOfficesToContent = async (content, images = []) => {
 // rows (with the AI's reasoning attached) that response-time tracking measures against, and moves
 // the complaint into 'ongoing'. Returns false — leaving the complaint at its current status, for a
 // staff member to assign manually — when nothing matched.
+// Rerouting is only for a feedback no office has received yet. Once an office has acknowledged it, it is that office's
+// to handle (and, if it is not theirs, to hand over: see handOff), so a supervisor can no longer move it elsewhere.
+// Returns the offices that already received it (empty = it can still be rerouted).
+const officesThatReceived = async (complaintId) => {
+    const rows = await ComplaintOffice.findAll({
+        where: {
+            complaintId,
+            isActive: true,
+            [Op.or]: [{ isReceived: true }, { status: { [Op.in]: ['received', 'ongoing', 'completed'] } }]
+        },
+        include: [{ model: Office, as: 'office', attributes: ['alias', 'name'] }]
+    });
+    return rows.map(r => r.office?.alias || r.office?.name || `Office #${r.officeId}`);
+};
+const alreadyReceivedMessage = (labels) =>
+    `This feedback has already been received by ${labels.join(', ')}, so it can no longer be rerouted. The office can hand it over to another office instead.`;
+
 const assignComplaintToOffices = async (complaint) => {
     const images = await loadComplaintImages(complaint.id);
-    const { complexity, matches } = await matchOfficesToContent(complaint.content, images);
-    const resolutionDeadline = complexity ? await computeResolutionDeadline(complexity) : null;
-    const complexityNote = complexity
-        ? ` Classified as ${complexity.replace('_', ' ').toUpperCase()} (target: ${RESOLUTION_DAYS[complexity]} business days).`
-        : '';
+    const { matches } = await matchOfficesToContent(complaint.content, images);
 
     if (!matches.length) {
         // No AI provider configured, or nothing matched confidently — leave it explicitly
-        // 'unassigned' so a supervisor can find and route it manually. Complexity (and its
-        // resolution deadline) is still recorded if the model managed to classify it.
-        await complaint.update({ status: 'unassigned', complexity, resolutionDeadline });
+        // 'unassigned' so a supervisor can find and route it manually. It has no deadline until an
+        // office is assigned: the clock starts when it is routed.
+        await complaint.update({ status: 'unassigned' });
         await logHistory({
             complaintId: complaint.id,
             actorRole: 'ai',
             actorLabel: 'AI Auto-Assignment',
             action: 'left_unassigned',
-            description: `No office could be confidently matched to this feedback — left unassigned for manual routing.${complexityNote}`
+            description: 'No office could be confidently matched to this feedback — left unassigned for manual routing.'
         });
+        // it waits for a supervisor now: tell every super and admin, not just that something came in
+        await notifyAdmins(`Feedback ${complaint.referenceNo} could not be matched to an office. It needs to be assigned.`);
         return false;
     }
 
     const receiveDeadline = await computeReceiveDeadline();
+    const resolutionDeadline = await computeResolutionDeadline();
     for (const { office, reason } of matches) {
         await ComplaintOffice.findOrCreate({
             where: { complaintId: complaint.id, officeId: office.id },
@@ -279,17 +265,31 @@ const assignComplaintToOffices = async (complaint) => {
         });
     }
 
-    await complaint.update({ status: 'ongoing', complexity, resolutionDeadline });
-    await notifyOffices(matches.map(m => m.office));
+    await complaint.update({ status: 'ongoing', resolutionDeadline });
+    await notifyRouted(complaint, matches.map(m => m.office));
     await logHistory({
         complaintId: complaint.id,
         actorRole: 'ai',
         actorLabel: 'AI Auto-Assignment',
         action: 'auto_assigned',
-        description: `Auto-assigned to ${matches.map(m => m.office.alias || m.office.name).join(', ')}.${complexityNote}`
+        description: `Auto-assigned to ${matches.map(m => m.office.alias || m.office.name).join(', ')}. ` +
+            `Acknowledge within 1 day, resolve by ${moment(resolutionDeadline).format('MMM DD, YYYY hh:mm A')}.`
     });
 
     return true;
+};
+
+// Routing reads the feedback with an AI model (and its photos), which can take many seconds, and
+// the citizen is waiting on the response — the app would show a timeout for a feedback that was
+// in fact saved. So the citizen's request waits for routing only up to `graceMs`; if it takes
+// longer, the response goes out with the feedback still 'pending' and routing finishes in the
+// background (offices are notified when it does, and the desk is told to refresh).
+const ROUTING_GRACE_MS = 8000;
+const routeWithGrace = (complaint, graceMs = ROUTING_GRACE_MS) => {
+    const job = assignComplaintToOffices(complaint)
+        .then(() => broadcastComplaintsChanged('routed'))
+        .catch(error => console.error(`Routing complaint ${complaint.id} failed:`, error));
+    return Promise.race([job, new Promise(resolve => setTimeout(resolve, graceMs))]);
 };
 
 // An unclaimed complaint (userId null) carries its complainant on the ComplaintDetail's guest*
@@ -309,6 +309,16 @@ const hydrateGuestComplainant = (complaintJSON) => {
             lastname: d.guestLastName || null,
             citizen: { email: d.guestEmail || null, phoneNo: d.guestPhone || null }
         };
+    }
+    return complaintJSON;
+};
+
+// How a feedback reads (positive / neutral / negative) is for the desk: the citizen never sees it on their own feedback.
+const stripSentiment = (complaintJSON) => {
+    if (complaintJSON) {
+        delete complaintJSON.sentiment;
+        delete complaintJSON.sentimentReason;
+        delete complaintJSON.sentimentAt;
     }
     return complaintJSON;
 };
@@ -335,7 +345,7 @@ const annotateOfficeCompliance = (complaintJSON) => {
 };
 
 // Same idea as annotateOfficeCompliance above, but for the whole complaint's resolution
-// deadline (ARTA/EODB complexity tier) rather than a single office's acknowledgement deadline.
+// deadline (the fixed 3-day resolution time, plus the one-time extension) rather than a single office's acknowledgement deadline.
 const annotateResolutionCompliance = (complaintJSON) => {
     if (complaintJSON) {
         complaintJSON.resolutionComplianceStatus = getResolutionComplianceStatus(complaintJSON);
@@ -353,7 +363,9 @@ module.exports = (_io) => {
             const files = req.files; // From Multer
 
             const otp = await generateUniqueOtp();
-            const anonymous = isTruthy(isAnonymous);
+            // Anonymous filing is for signed-in citizens only (see createAccountComplaint): a guest
+            // filing is always under the name they give.
+            const anonymous = false;
 
             try {
                 // No account is created here anymore. A guest complaint stands on its own —
@@ -394,13 +406,12 @@ module.exports = (_io) => {
                 html = html.replace('{{ otp }}', otp).replace('{{ referenceNo }}', complaint.referenceNo);
 
                 await transporter.sendMail({
-                    from: `"CSFLU - Complaint Hotline" <${process.env.MAIL_USER}>`,
+                    from: mailFrom(),
                     to: email,
                     subject: 'One-Time Pin',
                     html
                 });
 
-                await notifyAdmins('New incoming feedback');
                 await logHistory({
                     complaintId: complaint.id,
                     actorRole: 'citizen',
@@ -454,7 +465,6 @@ module.exports = (_io) => {
                 complaint.status = 'pending';
                 await complaint.save();
 
-                await notifyAdmins('Complaint verified');
                 await logHistory({
                     complaintId: complaint.id,
                     actorRole: 'citizen',
@@ -469,7 +479,9 @@ module.exports = (_io) => {
 
                 // Read the content, match it to the responsible department(s), and route it
                 // immediately (a no-match just leaves it 'pending' for a staff member to assign).
-                await assignComplaintToOffices(complaint);
+                // How it reads (positive / neutral / negative) is read in the background; filing never waits on it.
+                tagComplaint(complaint.id);
+                await routeWithGrace(complaint);
 
                 broadcastComplaintsChanged('verified');
 
@@ -485,9 +497,12 @@ module.exports = (_io) => {
             }
         },
         createAccountComplaint: async (req, res) => {
-            const { content, latitude, longitude } = req.body;
+            const { content, latitude, longitude, isAnonymous } = req.body;
             const files = req.files;
             const userId = req.userId;
+            // "File anonymously": hides only the person — their name is withheld from the offices and
+            // staff; the feedback itself, its place and its photos are filed as usual.
+            const anonymous = isTruthy(isAnonymous);
 
             if (!content) {
                 return res.status(400).json({ message: 'Feedback content is required.' });
@@ -505,7 +520,7 @@ module.exports = (_io) => {
                     content,
                     status: 'pending',
                     via: 'account',
-                    isAnonymous: false
+                    isAnonymous: anonymous
                 });
 
                 await ComplaintDetail.create({
@@ -520,15 +535,15 @@ module.exports = (_io) => {
                 await logHistory({
                     complaintId: complaint.id,
                     actorRole: 'citizen',
-                    actorLabel: await resolveActorLabel(userId),
+                    actorLabel: anonymous ? null : await resolveActorLabel(userId),
                     action: 'filed',
-                    description: 'Complaint filed by a signed-in citizen.'
+                    description: anonymous ? 'Complaint filed anonymously by a signed-in citizen.' : 'Complaint filed by a signed-in citizen.'
                 });
 
                 // Already a verified account — no OTP gate to wait on, route straight away
                 // (a no-match leaves it 'unassigned' for a staff member to assign).
-                await assignComplaintToOffices(complaint);
-                await notifyAdmins('New incoming feedback');
+                tagComplaint(complaint.id);
+                await routeWithGrace(complaint);
                 broadcastComplaintsChanged('filed');
 
                 return res.status(201).json({
@@ -544,11 +559,12 @@ module.exports = (_io) => {
         // same intake fields as the external app's guest form, but skips the OTP-verification gate
         // entirely: a staff member is directly vouching for it, so it starts 'verified' rather than
         // 'unverified'/'pending', then goes straight into auto-assignment like any other verified
-        // complaint. Like a guest OTP filing, this no longer mints a placeholder account — the
-        // citizen's contact info is stored on the ComplaintDetail; if that person already has an
-        // account they can link this complaint to it via the claim flow later.
+        // complaint. The citizen gets an account to follow it with (see utils/staffFiledAccount.js):
+        // a temporary one with the default password when they have none, and an email with the
+        // feedback's details, the sign-in details, the verification code and the steps to follow.
         createStaffComplaint: async (req, res) => {
-            const { firstname, lastname, email, contactNo, content } = req.body;
+            const { firstname, lastname, contactNo, content } = req.body;
+            const email = (req.body.email || '').trim();
             const files = req.files;
 
             if (!content) {
@@ -557,8 +573,13 @@ module.exports = (_io) => {
             if (!firstname || !lastname || !email) {
                 return res.status(400).json({ message: 'Citizen firstname, lastname, and email are required.' });
             }
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                return res.status(400).json({ message: 'Citizen email is not a valid email address.' });
+            }
 
             try {
+                const account = await provisionCitizenAccount({ firstname, lastname, email, contactNo });
+
                 const complaint = await Complaint.create({
                     content,
                     status: 'verified',
@@ -568,11 +589,7 @@ module.exports = (_io) => {
 
                 await ComplaintDetail.create({
                     complaintId: complaint.id,
-                    userId: null,
-                    guestFirstName: firstname,
-                    guestLastName: lastname,
-                    guestEmail: email,
-                    guestPhone: contactNo || null
+                    userId: account.user.id
                 });
                 await saveComplaintFiles(files, complaint.id);
 
@@ -582,18 +599,24 @@ module.exports = (_io) => {
                     actorRole: req.role,
                     actorLabel,
                     action: 'filed',
-                    description: `Filed by ${actorLabel || 'staff'} on behalf of ${firstname} ${lastname} — verified at intake, no OTP step.`
+                    description: `Filed by ${actorLabel || 'staff'} on behalf of ${firstname} ${lastname} — verified at intake, no OTP step. ` +
+                        (account.needsVerify
+                            ? 'A temporary account with the default password was created; the sign-in details and verification code were emailed.'
+                            : 'Added to the citizen\'s existing account.')
                 });
 
                 // Same auto-assignment every other verified complaint goes through (a no-match
                 // leaves it 'unassigned' for manual routing, same as any other path).
+                tagComplaint(complaint.id);
                 await assignComplaintToOffices(complaint);
-                await notifyAdmins('New incoming feedback');
+                // after routing, so the email can say which office(s) it went to
+                const emailed = await sendStaffFiledEmail({ complaint, email, firstname, lastname, account });
                 broadcastComplaintsChanged('filed');
 
                 return res.status(201).json({
-                    message: 'Feedback filed and routed.',
-                    complaint
+                    message: emailed ? 'Feedback filed and routed. The citizen was emailed.' : 'Feedback filed and routed, but the email to the citizen could not be sent.',
+                    complaint,
+                    account: { created: account.needsVerify, emailed }
                 });
             } catch (error) {
                 console.error('Error creating staff-filed complaint:', error);
@@ -624,6 +647,13 @@ module.exports = (_io) => {
                 }
                 if (['completed', 'cancelled'].includes(complaint.status)) {
                     return res.status(400).json({ message: 'This feedback is already finalized and can no longer be edited.' });
+                }
+                // once an office has acknowledged it, what it received must not change underneath it
+                const acknowledged = await ComplaintOffice.count({
+                    where: { complaintId: complaint.id, isActive: true, status: { [Op.ne]: 'pending' } }
+                });
+                if (acknowledged) {
+                    return res.status(400).json({ message: 'An assigned office has already acknowledged this feedback, so it can no longer be edited.' });
                 }
 
                 if (content) {
@@ -695,10 +725,7 @@ module.exports = (_io) => {
                 }
 
                 const images = await loadComplaintImages(complaint.id);
-                // Same single call already classifies a complexity tier alongside the office
-                // matches — surfacing it here too means the complexity/SLA panel gets an AI
-                // suggestion for free, off the same request, rather than a second LLM round-trip.
-                const { matches, complexity } = await matchOfficesToContent(complaint.content, images);
+                const { matches } = await matchOfficesToContent(complaint.content, images);
 
                 return res.status(200).json({
                     suggestions: matches.map(({ office, reason }) => ({
@@ -706,8 +733,7 @@ module.exports = (_io) => {
                         name: office.name,
                         alias: office.alias,
                         reason
-                    })),
-                    complexity: VALID_COMPLEXITIES.includes(complexity) ? complexity : null
+                    }))
                 });
             } catch (error) {
                 console.error('Error suggesting office:', error);
@@ -731,6 +757,11 @@ module.exports = (_io) => {
                 const complaint = await Complaint.findByPk(id);
                 if (!complaint) {
                     return res.status(404).json({ message: 'Feedback not found.' });
+                }
+
+                const received = await officesThatReceived(complaint.id);
+                if (received.length) {
+                    return res.status(409).json({ message: alreadyReceivedMessage(received) });
                 }
 
                 const resolvedOffices = [];
@@ -787,9 +818,12 @@ module.exports = (_io) => {
 
                 if (resolvedOffices.length) {
                     if (['unverified', 'pending', 'unassigned'].includes(complaint.status)) {
-                        await complaint.update({ status: 'ongoing' });
+                        await complaint.update({
+                            status: 'ongoing',
+                            ...(complaint.resolutionDeadline ? {} : { resolutionDeadline: await computeResolutionDeadline() })
+                        });
                     }
-                    await notifyOffices(resolvedOffices.map(r => r.office));
+                    await notifyRouted(complaint, resolvedOffices, await resolveActorLabel(req.userId), req.userId);
                 } else {
                     await complaint.update({ status: 'unassigned' });
                 }
@@ -805,6 +839,11 @@ module.exports = (_io) => {
                         : `All office assignments cleared by ${actorLabel || 'staff'} — left unassigned.`
                 });
 
+                // a supervisor took every office off it: the other supervisors are told it is waiting to be assigned again
+                if (!resolvedOffices.length) {
+                    await notifyAdmins(`Feedback ${complaint.referenceNo} was left without an office by ${actorLabel || 'a supervisor'}. It needs to be assigned.`, req.userId);
+                }
+
                 broadcastComplaintsChanged('reassigned');
 
                 return res.status(200).json({ message: 'Office(s) reassigned.', complaint });
@@ -813,18 +852,16 @@ module.exports = (_io) => {
                 return res.status(500).json({ message: 'Server error.', error });
             }
         },
-        // Corrects a misclassified ARTA/EODB complexity tier after the fact — the AI classifies
-        // once at assignment time (see matchOfficesToContent above) and nothing since then has
-        // ever revisited it. There's no per-office SLA anymore (removed — every complaint's
-        // deadline is governed by this tier alone), so this IS "reassigning the SLA": changing
-        // the tier recomputes resolutionDeadline, which drives every overdue/compliance check
-        // downstream (getResolutionComplianceStatus, the Report page's ARTA compliance rate, etc).
-        reassignComplexity: async (req, res) => {
+        // The ONE-TIME extension of a feedback's resolution time: 3 more days, asked for by the
+        // office handling it (or by a super/admin for it). Granted when requested: the resolution
+        // deadline moves 3 days later, it is written to the history, and the supervisors and the
+        // citizen are told. Only before the deadline has passed, and only once per feedback.
+        requestExtension: async (req, res) => {
             const { id } = req.params;
-            const { complexity } = req.body;
+            const reason = String(req.body.reason || '').trim();
 
-            if (!VALID_COMPLEXITIES.includes(complexity)) {
-                return res.status(400).json({ message: `complexity must be one of: ${VALID_COMPLEXITIES.join(', ')}.` });
+            if (reason.length < 5) {
+                return res.status(400).json({ message: 'Give a short reason for the extension.' });
             }
 
             try {
@@ -832,35 +869,157 @@ module.exports = (_io) => {
                 if (!complaint) {
                     return res.status(404).json({ message: 'Feedback not found.' });
                 }
-
-                const previousComplexity = complaint.complexity;
-                if (previousComplexity === complexity) {
-                    return res.status(200).json({ message: 'Complexity unchanged.', complaint });
+                if (['unverified', 'completed', 'cancelled'].includes(complaint.status)) {
+                    return res.status(400).json({ message: 'This feedback can no longer be extended.' });
+                }
+                if (!complaint.resolutionDeadline) {
+                    return res.status(400).json({ message: 'This feedback has no resolution deadline yet — it has not been routed to an office.' });
+                }
+                if (complaint.extensionGrantedAt) {
+                    return res.status(409).json({ message: 'This feedback has already been extended once.' });
+                }
+                if (new Date(complaint.resolutionDeadline) < new Date()) {
+                    return res.status(400).json({ message: 'The resolution deadline has already passed, so it can no longer be extended.' });
                 }
 
-                // Counted from when the complaint was actually filed (createdAt), not from this
-                // correction's timestamp — the target was always "N business days from filing",
-                // this just fixes which N applies, the same way the original auto-classification
-                // effectively did (it ran moments after createdAt too).
-                const resolutionDeadline = await computeResolutionDeadline(complexity, complaint.createdAt);
-                await complaint.update({ complexity, resolutionDeadline });
+                // An office may only extend what is assigned to it
+                if (req.role === 'workstation') {
+                    const staff = await Staff.findOne({ where: { userId: req.userId } });
+                    const mine = staff
+                        ? await ComplaintOffice.findOne({ where: { complaintId: complaint.id, officeId: staff.officeId, isActive: true } })
+                        : null;
+                    if (!mine) {
+                        return res.status(403).json({ message: 'This feedback is not assigned to your office.' });
+                    }
+                    // an office asks for more time only after it has received the feedback
+                    if (mine.status === 'pending') {
+                        return res.status(409).json({ message: 'Your office has not received this feedback yet. Receive it first.' });
+                    }
+                }
+
+                const previous = complaint.resolutionDeadline;
+                const resolutionDeadline = moment(previous).add(EXTENSION_DAYS, 'days').toDate();
+                await complaint.update({
+                    resolutionDeadline,
+                    extensionGrantedAt: new Date(),
+                    extensionReason: reason,
+                    extensionRequestedBy: req.userId
+                });
 
                 const actorLabel = await resolveActorLabel(req.userId);
-                const fromLabel = previousComplexity ? previousComplexity.replace('_', ' ') : 'unclassified';
                 await logHistory({
                     complaintId: complaint.id,
                     actorRole: req.role,
                     actorLabel,
-                    action: 'reclassified',
-                    description: `Reclassified by ${actorLabel || 'staff'} from ${fromLabel} to ${complexity.replace('_', ' ')} ` +
-                        `(target: ${RESOLUTION_DAYS[complexity]} business days). New deadline: ${moment(resolutionDeadline).format('MMM DD, YYYY hh:mm A')}.`
+                    action: 'extended',
+                    description: `${actorLabel || 'An office'} asked for, and was granted, the one-time ${EXTENSION_DAYS}-day extension. ` +
+                        `New resolution deadline: ${moment(resolutionDeadline).format('MMM DD, YYYY hh:mm A')}. Reason: ${reason}`
                 });
 
-                broadcastComplaintsChanged('reclassified');
+                await notifyAdmins(`Feedback ${complaint.referenceNo} was extended by ${EXTENSION_DAYS} days.`);
+                await notifyComplainant(
+                    io, complaint.id,
+                    `More time was needed on your feedback ${complaint.referenceNo}: the office has ${EXTENSION_DAYS} more days to resolve it.`,
+                    { subject: 'More time on your feedback', emailGuest: false }
+                );
+                broadcastComplaintsChanged('extended');
 
-                return res.status(200).json({ message: 'Complexity reassigned.', complaint });
+                return res.status(200).json({ message: `Extended by ${EXTENSION_DAYS} days.`, complaint });
             } catch (error) {
-                console.error('Error reassigning complaint complexity:', error);
+                console.error('Error extending the feedback:', error);
+                return res.status(500).json({ message: 'Server error.', error: error.message });
+            }
+        },
+        // A signed-in citizen cancels THEIR OWN feedback, any time before it is completed. It
+        // closes the same way a supervisor's cancellation does (the offices are disabled, the
+        // record is kept) and everyone who was handling it is told.
+        cancelOwnComplaint: async (req, res) => {
+            const { id } = req.params;
+            const reason = String(req.body.reason || '').trim().slice(0, 500) || null;
+
+            try {
+                if (req.role !== 'citizen') {
+                    return res.status(403).json({ message: 'Only the citizen who filed it can cancel it this way.' });
+                }
+                const detail = await ComplaintDetail.findOne({ where: { complaintId: id } });
+                if (!detail || detail.userId !== req.userId) {
+                    return res.status(403).json({ message: 'You do not have access to this feedback.' });
+                }
+                const complaint = await Complaint.findByPk(id);
+                if (!complaint) {
+                    return res.status(404).json({ message: 'Feedback not found.' });
+                }
+                if (['completed', 'cancelled'].includes(complaint.status)) {
+                    return res.status(400).json({ message: 'This feedback is already finalized, so it cannot be cancelled.' });
+                }
+
+                // tell the offices and the supervisors BEFORE the offices are disabled (they are
+                // found through their active assignments)
+                await notifyOfficeStaff(complaint.id, `Feedback ${complaint.referenceNo} was cancelled by the citizen.`);
+                await notifyAdmins(`Feedback ${complaint.referenceNo} was cancelled by the citizen.`);
+
+                await complaint.update({
+                    status: 'cancelled',
+                    completedAt: new Date(),
+                    remarks: reason || 'Cancelled by the citizen.'
+                });
+                await ComplaintOffice.update(
+                    { status: 'cancelled', completedAt: new Date(), isActive: false },
+                    { where: { complaintId: complaint.id, isActive: true } }
+                );
+
+                await logHistory({
+                    complaintId: complaint.id,
+                    actorRole: 'citizen',
+                    actorLabel: await resolveCitizenActorLabel(req.userId, complaint.isAnonymous),
+                    action: 'cancelled',
+                    description: 'The citizen cancelled this feedback.' + (reason ? ` Reason: ${reason}` : '')
+                });
+                broadcastComplaintsChanged('cancelled');
+
+                return res.status(200).json({ message: 'Your feedback was cancelled.', complaint });
+            } catch (error) {
+                console.error('Error cancelling the feedback:', error);
+                return res.status(500).json({ message: 'Server error.', error: error.message });
+            }
+        },
+        // A few random, recent feedback items for the public page that visitors who are not signed
+        // in see. Only what is already being handled (routed, or finished), and only safe fields:
+        // a short piece of the text, where it stands, when, and the offices on it — never a name,
+        // contact, reference number, place or photo.
+        publicFeed: async (req, res) => {
+            const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 6, 1), 12);
+            try {
+                const since = moment().subtract(90, 'days').toDate();
+                const items = await Complaint.findAll({
+                    where: { status: { [Op.in]: ['ongoing', 'completed'] }, createdAt: { [Op.gte]: since } },
+                    attributes: ['id', 'content', 'status', 'createdAt'],
+                    order: [Sequelize.fn('RAND')],
+                    limit
+                });
+                const ids = items.map(c => c.id);
+                const links = ids.length
+                    ? await ComplaintOffice.findAll({ where: { complaintId: { [Op.in]: ids }, isActive: true }, attributes: ['complaintId', 'officeId'], raw: true })
+                    : [];
+                const offices = links.length
+                    ? await Office.findAll({ where: { id: { [Op.in]: [...new Set(links.map(l => l.officeId))] } }, attributes: ['id', 'alias', 'name'], raw: true })
+                    : [];
+                const officeById = new Map(offices.map(o => [o.id, o.alias || o.name]));
+
+                const data = items
+                    .filter(c => (c.content || '').trim())
+                    .map(c => {
+                        const text = c.content.trim().replace(/\s+/g, ' ');
+                        return {
+                            content: text.length > 240 ? `${text.slice(0, 237)}…` : text,
+                            status: c.status,
+                            createdAt: c.createdAt,
+                            offices: [...new Set(links.filter(l => l.complaintId === c.id).map(l => officeById.get(l.officeId)).filter(Boolean))]
+                        };
+                    });
+                return res.status(200).json({ data });
+            } catch (error) {
+                console.error('Error building the public feedback feed:', error);
                 return res.status(500).json({ message: 'Server error.', error: error.message });
             }
         },
@@ -1010,14 +1169,15 @@ module.exports = (_io) => {
         // was caught — reverts the whole complaint (and every office that had been marked
         // completed) back to 'ongoing' so it can be worked again, and notifies the citizen, since
         // they were already told it was resolved. Still narrower than updateStatus in one way:
-        // only ever reverses a 'completed' finalization, never a 'cancelled' one (a different,
-        // deliberate call that isn't "not actually done").
+        // reverses either finalization: a 'completed' one (offices that had finished go back to
+        // ongoing) or a 'cancelled' one (the offices the cancellation switched off are switched back
+        // on, and the deadline starts over from today).
         reopen: async (req, res) => {
             const { id } = req.params;
             const { reason } = req.body;
 
             if (!reason || !reason.trim()) {
-                return res.status(400).json({ message: 'A reason is required to reopen completed feedback.' });
+                return res.status(400).json({ message: 'A reason is required to reopen finalized feedback.' });
             }
 
             try {
@@ -1025,23 +1185,40 @@ module.exports = (_io) => {
                 if (!complaint) {
                     return res.status(404).json({ message: 'Feedback not found.' });
                 }
-                if (complaint.status !== 'completed') {
-                    return res.status(400).json({ message: 'Only completed feedback can be reopened.' });
+                if (!['completed', 'cancelled'].includes(complaint.status)) {
+                    return res.status(400).json({ message: 'Only completed or cancelled feedback can be reopened.' });
                 }
+                const wasCancelled = complaint.status === 'cancelled';
 
-                await complaint.update({
-                    status: 'ongoing',
-                    completedAt: null,
+                let officesTouched = 0;
+                let nextStatus = 'ongoing';
+                const resetFields = { completedAt: null, suggestedRemarks: null, suggestedRemarksAt: null };
+
+                if (wasCancelled) {
+                    // the offices the cancellation switched off (a reassignment only clears isActive and never sets
+                    // 'cancelled', so this is exactly the cancellation's doing)
+                    const switchedOff = await ComplaintOffice.findAll({
+                        where: { complaintId: complaint.id, isActive: false, status: 'cancelled' }
+                    });
+                    for (const office of switchedOff) {
+                        await office.update({ isActive: true, status: office.isReceived ? 'ongoing' : 'pending', completedAt: null });
+                    }
+                    officesTouched = switchedOff.length;
+                    const anyReceived = switchedOff.some(o => o.isReceived);
+                    nextStatus = !switchedOff.length ? 'unassigned' : (anyReceived ? 'ongoing' : 'pending');
+                    // a fresh clock: the old deadline ran out while it was closed
+                    if (switchedOff.length) resetFields.resolutionDeadline = await computeResolutionDeadline();
+                    resetFields.remarks = null;
+                } else {
                     // Clear the cached AI draft — a fresh one should reflect whatever prompted the
                     // reopen, not the (evidently wrong) prior state of the case.
-                    suggestedRemarks: null,
-                    suggestedRemarksAt: null
-                });
+                    [officesTouched] = await ComplaintOffice.update(
+                        { status: 'ongoing', completedAt: null },
+                        { where: { complaintId: complaint.id, isActive: true, status: 'completed' } }
+                    );
+                }
 
-                const [officesTouched] = await ComplaintOffice.update(
-                    { status: 'ongoing', completedAt: null },
-                    { where: { complaintId: complaint.id, isActive: true, status: 'completed' } }
-                );
+                await complaint.update({ status: nextStatus, ...resetFields });
 
                 const actorLabel = await resolveActorLabel(req.userId);
                 await logHistory({
@@ -1049,17 +1226,21 @@ module.exports = (_io) => {
                     actorRole: req.role,
                     actorLabel,
                     action: 'reopened',
-                    description: `Reopened by ${actorLabel || 'a supervisor'} — ${officesTouched} assigned office(s) reset to ongoing. Reason: ${reason.trim()}`
+                    description: wasCancelled
+                        ? `Reopened by ${actorLabel || 'a supervisor'} after it was cancelled — ${officesTouched} office(s) switched back on. Reason: ${reason.trim()}`
+                        : `Reopened by ${actorLabel || 'a supervisor'} — ${officesTouched} assigned office(s) reset to ongoing. Reason: ${reason.trim()}`
                 });
 
                 await notifyComplainant(
                     io, complaint.id,
-                    `Your feedback ${complaint.referenceNo} was reopened — it wasn't actually fully resolved. We're on it.`,
+                    wasCancelled
+                        ? `Your feedback ${complaint.referenceNo} was reopened — it is being looked at again.`
+                        : `Your feedback ${complaint.referenceNo} was reopened — it wasn't actually fully resolved. We're on it.`,
                     { subject: 'Your feedback was reopened', alsoEmailAccount: true }
                 );
                 await notifyOfficeStaff(
                     complaint.id,
-                    `Feedback ${complaint.referenceNo} was reopened by ${actorLabel || 'a supervisor'} — back to ongoing.`
+                    `Feedback ${complaint.referenceNo} was reopened by ${actorLabel || 'a supervisor'} — back to ${nextStatus}.`
                 );
 
                 broadcastComplaintsChanged('reopened');
@@ -1067,6 +1248,88 @@ module.exports = (_io) => {
                 return res.status(200).json({ message: 'Feedback reopened.', complaint });
             } catch (error) {
                 console.error('Error reopening complaint:', error);
+                return res.status(500).json({ message: 'Server error.', error: error.message });
+            }
+        },
+        // An office (workstation) hands the feedback over to one or more other offices, with a reason. Its own
+        // assignment is switched off and stamped (reassignedAt), which is where it sees the feedback end; the
+        // receiving offices see the whole trail from the filing, through this handover, onwards.
+        handOff: async (req, res) => {
+            const { id } = req.params;
+            const { offices, reason } = req.body;
+            const note = String(reason || '').trim();
+            const ids = [...new Set((Array.isArray(offices) ? offices : []).map(n => parseInt(n, 10)).filter(Boolean))];
+
+            if (note.length < 5) {
+                return res.status(400).json({ message: 'Say why it is being handed over (at least 5 characters).' });
+            }
+            if (!ids.length) {
+                return res.status(400).json({ message: 'Choose at least one office to hand it over to.' });
+            }
+
+            try {
+                const staff = await Staff.findOne({ where: { userId: req.userId }, include: [{ model: Office, as: 'office' }] });
+                if (!staff) {
+                    return res.status(403).json({ message: 'Your account is not linked to an office.' });
+                }
+                const complaint = await Complaint.findByPk(id);
+                if (!complaint) {
+                    return res.status(404).json({ message: 'Feedback not found.' });
+                }
+                if (['completed', 'cancelled'].includes(complaint.status)) {
+                    return res.status(400).json({ message: 'This feedback is already finalized.' });
+                }
+                const mine = await ComplaintOffice.findOne({ where: { complaintId: complaint.id, officeId: staff.officeId, isActive: true } });
+                if (!mine) {
+                    return res.status(403).json({ message: 'This feedback is not assigned to your office.' });
+                }
+                if (mine.status === 'completed') {
+                    return res.status(400).json({ message: 'Your office already marked its part done, so it cannot hand it over.' });
+                }
+
+                const targets = (await Office.findAll({ where: { id: ids.filter(i => i !== staff.officeId) } })).filter(o => o.isActive !== false);
+                if (!targets.length) {
+                    return res.status(400).json({ message: 'Choose another office to hand it over to.' });
+                }
+
+                const myLabel = staff.office?.alias || staff.office?.name || 'An office';
+                const assignmentReason = `From ${myLabel}: ${note}`;
+                for (const office of targets) {
+                    const [assignment, created] = await ComplaintOffice.findOrCreate({
+                        where: { complaintId: complaint.id, officeId: office.id },
+                        defaults: { isActive: true, assignedBy: 'admin', assignmentReason, receiveDeadline: await computeReceiveDeadline() }
+                    });
+                    if (!created && !assignment.isActive) {
+                        await assignment.update({
+                            isActive: true, assignedBy: 'admin', assignmentReason, status: 'pending', receivedAt: null, completedAt: null,
+                            receiveDeadline: await computeReceiveDeadline(), reassignedAt: null, reassignedByUserId: null
+                        });
+                    }
+                }
+
+                // this office steps out: its row is switched off and stamped, which ends its trail here
+                await mine.update({ isActive: false, reassignedAt: new Date(), reassignedByUserId: req.userId });
+
+                if (['pending', 'unassigned'].includes(complaint.status)) {
+                    await complaint.update({ status: 'ongoing' });
+                }
+
+                const codes = targets.map(o => o.alias || o.name).join(', ');
+                const actorLabel = await resolveActorLabel(req.userId);
+                await logHistory({
+                    complaintId: complaint.id,
+                    actorRole: req.role,
+                    actorLabel,
+                    action: 'reassigned',
+                    description: `${actorLabel || myLabel} handed the feedback over from ${myLabel} to ${codes}. Reason: ${note}`
+                });
+
+                await notifyAdmins(`${myLabel} handed feedback ${complaint.referenceNo} over to ${codes}.`);
+                broadcastComplaintsChanged('reassigned');
+
+                return res.status(200).json({ message: `Handed over to ${codes}.`, complaint });
+            } catch (error) {
+                console.error('Error handing the feedback over:', error);
                 return res.status(500).json({ message: 'Server error.', error: error.message });
             }
         },
@@ -1080,6 +1343,11 @@ module.exports = (_io) => {
             try {
                 if (!offices || !Array.isArray(offices)) {
                     return res.status(400).json({ message: 'Offices should be an array.' });
+                }
+
+                const received = await officesThatReceived(complaintId);
+                if (received.length) {
+                    return res.status(409).json({ message: alreadyReceivedMessage(received) });
                 }
 
                 const resolvedOffices = [];
@@ -1099,11 +1367,12 @@ module.exports = (_io) => {
 
                 const complaint = await Complaint.findByPk(complaintId);
                 await complaint.update({
-                    status: 'ongoing'
+                    status: 'ongoing',
+                    ...(complaint.resolutionDeadline ? {} : { resolutionDeadline: await computeResolutionDeadline() })
                 });
 
-                await notifyOffices(resolvedOffices);
                 const actorLabel = await resolveActorLabel(req.userId);
+                await notifyRouted(complaint, resolvedOffices, actorLabel, req.userId);
                 await logHistory({
                     complaintId: complaint.id,
                     actorRole: req.role,
@@ -1121,6 +1390,18 @@ module.exports = (_io) => {
                 return res.status(500).json({ message: 'Server error.', error });
             }
         },
+        // A supervisor has the AI read the feedback and CSM reports that have no impression yet. It runs in the background.
+        readSentiments: async (req, res) => {
+            if (sentimentRun.running) return res.status(409).json({ message: 'It is already reading. Wait for it to finish.' });
+            if (!hasLLM()) return res.status(400).json({ message: 'No AI provider is configured, so nothing can be read.' });
+            sentimentRun = { running: true, startedAt: new Date(), feedback: { read: 0, failed: 0 }, csm: { read: 0, failed: 0 } };
+            res.status(202).json({ message: 'Reading started.' });
+            backfillSentiments({ onProgress: (key, r) => { sentimentRun[key] = { ...r }; } })
+                .catch(error => console.error('Reading the sentiments failed:', error))
+                .finally(() => { sentimentRun.running = false; broadcastComplaintsChanged('sentiment'); });
+        },
+        getSentimentRun: (req, res) => res.json(sentimentRun),
+
         getAllComplaints: async (req, res) => {
             const userId = req.userId;
             const userRole = req.role;
@@ -1144,7 +1425,7 @@ module.exports = (_io) => {
             // acknowledgement deadline and not yet received — the "not compliant" queue a
             // supervisor works from to follow up. Admin/super only, same reasoning as above.
             const overdueOnly = req.query.overdue === 'true';
-            // Surfaces complaints still open past their ARTA/EODB complexity-tier resolution
+            // Surfaces complaints still open past their resolution
             // deadline (see resolutionDeadline / getResolutionComplianceStatus). Admin/super only.
             const resolutionOverdueOnly = req.query.resolutionOverdue === 'true';
 
@@ -1164,6 +1445,11 @@ module.exports = (_io) => {
                 if (status) {
                     complaintWhere.status = status;
                 }
+
+                // how it reads: positive / neutral / negative, or 'unread' for the ones no AI model has read yet
+                const sentiment = req.query.sentiment ? String(req.query.sentiment).trim() : '';
+                if (['positive', 'neutral', 'negative'].includes(sentiment)) complaintWhere.sentiment = sentiment;
+                else if (sentiment === 'unread') complaintWhere.sentiment = null;
 
                 // Free-text search — reference no. or the complaint's own content. (Citizen name
                 // isn't searchable here since it lives on a joined, sometimes-anonymized table.)
@@ -1435,6 +1721,16 @@ module.exports = (_io) => {
                 // needs a non-empty list to compare against.
                 const periodComplaintWhere = { complaintId: { [Op.in]: periodComplaintIds.length ? periodComplaintIds : [0] } };
 
+                // how the feedback filed in the period reads (see utils/sentiment.js)
+                const sentimentRows = await Complaint.findAll({
+                    where: complaintScopeWhere,
+                    attributes: ['sentiment', [Sequelize.fn('COUNT', Sequelize.col('id')), 'count']],
+                    group: ['sentiment'],
+                    raw: true
+                });
+                const sentimentMix = { positive: 0, neutral: 0, negative: 0, unread: 0 };
+                for (const r of sentimentRows) sentimentMix[r.sentiment || 'unread'] += Number(r.count);
+
                 const statusRows = await Complaint.findAll({
                     where: complaintScopeWhere,
                     attributes: ['status', [Sequelize.fn('COUNT', Sequelize.col('id')), 'count']],
@@ -1577,27 +1873,6 @@ module.exports = (_io) => {
                     avgAcknowledgementDays: { current: avgAcknowledgementDays, previous: prevAvgAcknowledgementDays, pctChange: pctChange(avgAcknowledgementDays, prevAvgAcknowledgementDays), label: trendLabel }
                 };
 
-                // Complexity mix + on-time resolution rate per ARTA/EODB tier — same 4-state
-                // compliance logic the detail modal uses, tallied instead of shown per-row.
-                const classified = await Complaint.findAll({
-                    where: { ...complaintScopeWhere, complexity: { [Op.ne]: null } },
-                    attributes: ['complexity', 'status', 'completedAt', 'resolutionDeadline'],
-                    raw: true
-                });
-                const totalClassified = classified.length;
-                const complexityMix = Object.keys(RESOLUTION_DAYS).map(tier => {
-                    const rows = classified.filter(c => c.complexity === tier);
-                    const finished = rows.filter(c => c.status === 'completed');
-                    const onTime = finished.filter(c => getResolutionComplianceStatus(c) === 'on_time').length;
-                    return {
-                        tier,
-                        targetDays: RESOLUTION_DAYS[tier],
-                        count: rows.length,
-                        share: totalClassified ? +(rows.length / totalClassified * 100).toFixed(1) : 0,
-                        onTimeRate: finished.length ? +(onTime / finished.length * 100).toFixed(1) : null
-                    };
-                });
-
                 // Open backlog (not completed/cancelled) among this period's complaints, by
                 // office — top 8. For a scoped office this naturally comes back as a single row
                 // (their own), so the frontend skips rendering this panel outside the
@@ -1700,6 +1975,67 @@ module.exports = (_io) => {
                 const reassignedCount = new Set(reassignedRows.map(r => r.complaintId)).size;
                 const reassignmentRate = totalComplaints ? +(reassignedCount / totalComplaints * 100).toFixed(1) : 0;
 
+                // ------------------------------------------------------------------ the process the feedback goes through
+                // Everything below describes the same period complaints as above (filed within the window), scoped to the
+                // office when it is an office looking.
+                const periodFull = await Complaint.findAll({
+                    where: complaintScopeWhere,
+                    attributes: ['id', 'status', 'via', 'isAnonymous', 'extensionGrantedAt', 'resolutionDeadline'],
+                    raw: true
+                });
+                const periodOfficeRows = await ComplaintOffice.findAll({
+                    where: { ...periodComplaintWhere, ...officeRowWhere },
+                    attributes: ['complaintId', 'status', 'isActive', 'receivedAt'],
+                    raw: true
+                });
+                const rowsByComplaint = {};
+                periodOfficeRows.forEach(r => { (rowsByComplaint[r.complaintId] = rowsByComplaint[r.complaintId] || []).push(r); });
+                const isFinal = (c) => ['completed', 'cancelled'].includes(c.status);
+
+                // an office's part is done, or (system-wide) every active office's part is
+                const partsDone = (c) => {
+                    const active = (rowsByComplaint[c.id] || []).filter(r => r.isActive);
+                    return active.length > 0 && active.every(r => r.status === 'completed');
+                };
+
+                const pipeline = {
+                    filed: periodFull.length,
+                    routed: periodFull.filter(c => (rowsByComplaint[c.id] || []).length > 0).length,
+                    acknowledged: periodFull.filter(c => (rowsByComplaint[c.id] || []).some(r => r.receivedAt)).length,
+                    officesDone: periodFull.filter(c => c.status === 'completed' || partsDone(c)).length,
+                    completed: periodFull.filter(c => c.status === 'completed').length,
+                };
+
+                // done by the offices, waiting for a supervisor to approve the whole feedback
+                const awaitingApprovalCount = periodFull.filter(c => !isFinal(c) && partsDone(c)).length;
+                // due within the next 24 hours and not yet finalized
+                const dayAhead = new Date(now.getTime() + 86400000);
+                const dueSoonCount = periodFull.filter(c =>
+                    !isFinal(c) && c.resolutionDeadline && new Date(c.resolutionDeadline) > now && new Date(c.resolutionDeadline) <= dayAhead
+                ).length;
+                const extendedCount = periodFull.filter(c => c.extensionGrantedAt).length;
+
+                const filedHow = {
+                    account: periodFull.filter(c => c.via === 'account' && !c.isAnonymous).length,
+                    anonymous: periodFull.filter(c => c.via === 'account' && c.isAnonymous).length,
+                    staff: periodFull.filter(c => c.via === 'staff').length,
+                    guest: periodFull.filter(c => c.via === 'otp').length,
+                };
+
+                const trailRows = await ComplaintHistory.findAll({
+                    where: { ...periodComplaintWhere, action: { [Op.in]: ['reassigned', 'cancelled', 'reopened'] } },
+                    attributes: ['complaintId', 'action', 'actorRole'],
+                    raw: true
+                });
+                const distinct = (rows) => new Set(rows.map(r => r.complaintId)).size;
+                const handOverRows = trailRows.filter(r => r.action === 'reassigned' && r.actorRole === 'workstation');
+                const handOvers = { entries: handOverRows.length, complaints: distinct(handOverRows) };
+                const closedWithout = {
+                    byCitizen: distinct(trailRows.filter(r => r.action === 'cancelled' && r.actorRole === 'citizen')),
+                    byStaff: distinct(trailRows.filter(r => r.action === 'cancelled' && r.actorRole !== 'citizen')),
+                };
+                const reopenedCount = distinct(trailRows.filter(r => r.action === 'reopened'));
+
                 // Filing volume trend, bucketed to a granularity that fits the selected period —
                 // daily across a week, weekly across a month, monthly across a year.
                 let bucketDefs;
@@ -1776,7 +2112,6 @@ module.exports = (_io) => {
                         },
                         trends,
                         statusBreakdown,
-                        complexityMix,
                         officeBacklog,
                         slaCompliance: { ackRate, resolutionRate },
                         ackResolutionByOffice,
@@ -1786,6 +2121,17 @@ module.exports = (_io) => {
                             reassignedCount,
                             reassignmentRate
                         },
+                        process: {
+                            pipeline,
+                            awaitingApprovalCount,
+                            dueSoonCount,
+                            extendedCount,
+                            filedHow,
+                            handOvers,
+                            closedWithout,
+                            reopenedCount
+                        },
+                        sentiment: sentimentMix,
                         satisfaction: {
                             avgRating: avgSatisfaction,
                             totalRatings,
@@ -1956,6 +2302,23 @@ module.exports = (_io) => {
                         : redactIfAnonymous(hydrateGuestComplainant(rows.toJSON()))
                 ));
 
+                if (userRole === 'citizen') stripSentiment(data);
+
+                // An office that handed the feedback over (and is no longer assigned) sees the trail only up to that
+                // moment: the history and the responses after it belong to the offices that took it on.
+                if (!['citizen', 'super', 'admin', 'monitoring'].includes(userRole)) {
+                    const staff = await Staff.findOne({ where: { userId } });
+                    const mine = (data.complaintOffices || []).filter(co => co.officeId === staff?.officeId);
+                    const stillAssigned = mine.some(co => co.isActive);
+                    const handedAt = mine.map(co => co.reassignedAt).filter(Boolean).sort().pop();
+                    if (!stillAssigned && handedAt) {
+                        const cut = new Date(handedAt).getTime();
+                        data.history = (data.history || []).filter(h => new Date(h.createdAt).getTime() <= cut);
+                        data.responses = (data.responses || []).filter(r => new Date(r.createdAt).getTime() <= cut);
+                        data.trailCutAt = handedAt;
+                    }
+                }
+
                 res.json({
                     data
                 });
@@ -2048,7 +2411,7 @@ module.exports = (_io) => {
                     return res.status(404).json({ message: 'No feedback found for that reference number and access code.' });
                 }
 
-                return res.json({ data: annotateResolutionCompliance(annotateOfficeCompliance(hydrateGuestComplainant(complaint.toJSON()))) });
+                return res.json({ data: stripSentiment(annotateResolutionCompliance(annotateOfficeCompliance(hydrateGuestComplainant(complaint.toJSON())))) });
             } catch (error) {
                 console.error('Error tracking complaint:', error);
                 return res.status(500).json({ message: 'Server error.', error });

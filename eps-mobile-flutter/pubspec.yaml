@@ -47,6 +47,7 @@ dependencies:
 
   # App-wide typeface (see lib/src/theme/app_theme.dart).
   google_fonts: ^6.2.1
+  bootstrap_icons: ^1.13.2
 
 # path_provider_android 2.3.x switched to `jni`, which drags in the Android NDK
 # (a ~1 GB toolchain download) just so the cache dir can be read. Nothing here
@@ -72,19 +73,19 @@ flutter:
   assets:
     - assets/branding/
 
-# OS launch screen — the official ePS wordmark (from eps-www-quasar-external's
-# src/assets/epslogo.png) on white. The in-app SplashScreen
+# OS launch screen — just the ePS "e" on white, so it hands over to the in-app loader
+# without a logo flash. The in-app SplashScreen
 # (lib/src/ui/screens/splash_screen.dart) takes over once the engine is up.
 flutter_native_splash:
   color: "#FFFFFF"
   color_dark: "#FFFFFF"
-  image: assets/branding/eps_logo_splash.png
-  image_dark: assets/branding/eps_logo_splash.png
+  image: assets/branding/eps_e_splash.png
+  image_dark: assets/branding/eps_e_splash.png
   android_12:
     color: "#FFFFFF"
     color_dark: "#FFFFFF"
-    image: assets/branding/eps_logo_splash.png
-    image_dark: assets/branding/eps_logo_splash.png
+    image: assets/branding/eps_e_splash.png
+    image_dark: assets/branding/eps_e_splash.png
   android: true
   ios: true
   web: false

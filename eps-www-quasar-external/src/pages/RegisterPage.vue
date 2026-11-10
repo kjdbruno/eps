@@ -1,98 +1,85 @@
 <template>
     <AuthShell
         title="Sign Up"
-        subtitle="Create an account to file feedback without OTP and track them in one place."
-        max-width="1100px"
-        wide
+        subtitle="Create an account to file feedback without OTP and follow them in one place."
+        auth
+        icon="bi-person-plus"
+        headline="Create your citizen account"
+        lead="It takes less than a minute and no existing feedback is needed."
+        :steps="SIDE_STEPS"
     >
-        <div class="row q-col-gutter-xl">
-            <div class="col-12 col-md-7">
-                <q-card class="no-shadow custom-border radius-md q-pa-xl">
-                    <div class="row q-col-gutter-sm q-mb-md">
-                        <div class="col-12 col-sm-6">
-                            <div class="text-caption text-uppercase q-mb-xs" :class="RegisterErrors.firstname ? 'text-negative' : 'text-grey'">{{ RegisterErrors.firstname || 'firstname' }}</div>
-                            <q-input label="Enter Firstname" outlined v-model="registerForm.firstname" :error="!!RegisterErrors.firstname" no-error-icon />
-                        </div>
-                        <div class="col-12 col-sm-6">
-                            <div class="text-caption text-uppercase q-mb-xs" :class="RegisterErrors.lastname ? 'text-negative' : 'text-grey'">{{ RegisterErrors.lastname || 'lastname' }}</div>
-                            <q-input label="Enter Lastname" outlined v-model="registerForm.lastname" :error="!!RegisterErrors.lastname" no-error-icon />
-                        </div>
-                    </div>
-                    <div class="q-mb-md">
-                        <div class="text-caption text-uppercase q-mb-xs" :class="RegisterErrors.email ? 'text-negative' : 'text-grey'">{{ RegisterErrors.email || 'email' }}</div>
-                        <q-input label="Enter Email" outlined v-model="registerForm.email" :error="!!RegisterErrors.email" no-error-icon />
-                    </div>
-                    <div class="q-mb-md">
-                        <div class="text-caption text-uppercase q-mb-xs" :class="RegisterErrors.phoneNo ? 'text-negative' : 'text-grey'">{{ RegisterErrors.phoneNo || 'contact no.' }}</div>
-                        <q-input label="Enter Contact No." outlined v-model="registerForm.phoneNo" :error="!!RegisterErrors.phoneNo" no-error-icon />
-                    </div>
-                    <div class="row q-col-gutter-sm q-mb-md">
-                        <div class="col-12 col-sm-6">
-                            <div class="text-caption text-uppercase q-mb-xs" :class="RegisterErrors.password ? 'text-negative' : 'text-grey'">{{ RegisterErrors.password || 'password' }}</div>
-                            <q-input label="Enter Password" outlined v-model="registerForm.password" type="password" :error="!!RegisterErrors.password" no-error-icon />
-                        </div>
-                        <div class="col-12 col-sm-6">
-                            <div class="text-caption text-uppercase q-mb-xs" :class="RegisterErrors.confirmPassword ? 'text-negative' : 'text-grey'">{{ RegisterErrors.confirmPassword || 'confirm password' }}</div>
-                            <q-input label="Confirm Password" outlined v-model="registerForm.confirmPassword" type="password" :error="!!RegisterErrors.confirmPassword" no-error-icon />
-                        </div>
-                    </div>
-
-                    <q-btn class="full-width" unelevated color="primary" size="lg" label="create account" :loading="RegisterLoading" @click="SubmitRegister()"/>
-
-                    <div class="text-center q-mt-md">
-                        <span class="text-caption text-grey">already have an account? </span>
-                        <router-link class="text-caption text-primary" to="/login">sign in</router-link>
-                    </div>
-                </q-card>
+        <form class="lgn-stack" @submit.prevent="SubmitRegister()">
+            <div class="lgn-sec"><span>your name</span></div>
+            <div class="lgn-grid">
+                <div>
+                    <q-input v-model="registerForm.firstname" outlined rounded dense hide-bottom-space no-error-icon placeholder="First name" :error="!!RegisterErrors.firstname" autocomplete="given-name" autofocus />
+                    <div class="lgn-err" v-if="RegisterErrors.firstname">{{ RegisterErrors.firstname }}</div>
+                </div>
+                <div>
+                    <q-input v-model="registerForm.lastname" outlined rounded dense hide-bottom-space no-error-icon placeholder="Last name" :error="!!RegisterErrors.lastname" autocomplete="family-name" />
+                    <div class="lgn-err" v-if="RegisterErrors.lastname">{{ RegisterErrors.lastname }}</div>
+                </div>
             </div>
-            <div class="col-12 col-md-5">
-                <q-card class="no-shadow bg-accent radius-md q-pa-xl q-mb-md">
-                    <div class="text-overline text-primary text-weight-bold q-mb-md">why create an account</div>
-                    <q-list>
-                        <q-item class="q-px-none">
-                            <q-item-section avatar top>
-                                <q-avatar color="primary" text-color="white" size="32px" class="text-body2">1</q-avatar>
-                            </q-item-section>
-                            <q-item-section>
-                                <q-item-label class="text-weight-bold">Skip the one-time code</q-item-label>
-                                <q-item-label caption>File feedback in one step instead of waiting on an email verification each time.</q-item-label>
-                            </q-item-section>
-                        </q-item>
-                        <q-item class="q-px-none">
-                            <q-item-section avatar top>
-                                <q-avatar color="primary" text-color="white" size="32px" class="text-body2">2</q-avatar>
-                            </q-item-section>
-                            <q-item-section>
-                                <q-item-label class="text-weight-bold">A dashboard for your feedback</q-item-label>
-                                <q-item-label caption>See every feedback's status and updates in one place, no reference number needed.</q-item-label>
-                            </q-item-section>
-                        </q-item>
-                        <q-item class="q-px-none">
-                            <q-item-section avatar top>
-                                <q-avatar color="primary" text-color="white" size="32px" class="text-body2">3</q-avatar>
-                            </q-item-section>
-                            <q-item-section>
-                                <q-item-label class="text-weight-bold">Be known in the community</q-item-label>
-                                <q-item-label caption>Your name shows on discussions and poll votes instead of "Anonymous."</q-item-label>
-                            </q-item-section>
-                        </q-item>
-                    </q-list>
-                </q-card>
-                <q-card class="no-shadow custom-border radius-md q-pa-lg">
-                    <div class="row items-center">
-                        <q-icon name="bi-shield-check" color="primary" size="1.5em" class="q-mr-sm" />
-                        <div class="text-caption text-grey">
-                            Your details are used only for your account and to reach you about your
-                            feedback, in line with the Data Privacy Act.
-                        </div>
-                    </div>
-                </q-card>
+
+            <div class="lgn-sec"><span>how to reach you</span></div>
+            <div>
+                <q-input v-model="registerForm.email" type="email" outlined rounded dense hide-bottom-space no-error-icon placeholder="Email address" :error="!!RegisterErrors.email" autocomplete="email">
+                    <template #prepend><q-icon name="bi-envelope" size="18px" /></template>
+                </q-input>
+                <div class="lgn-err" v-if="RegisterErrors.email">{{ RegisterErrors.email }}</div>
             </div>
+            <div>
+                <q-input v-model="registerForm.phoneNo" outlined rounded dense hide-bottom-space no-error-icon placeholder="Contact no. (09XXXXXXXXX)" :error="!!RegisterErrors.phoneNo" autocomplete="tel">
+                    <template #prepend><q-icon name="bi-telephone" size="18px" /></template>
+                </q-input>
+                <div class="lgn-err" v-if="RegisterErrors.phoneNo">{{ RegisterErrors.phoneNo }}</div>
+            </div>
+
+            <div class="lgn-sec"><span>your password</span></div>
+            <div class="lgn-grid">
+                <div>
+                    <q-input v-model="registerForm.password" :type="showPassword ? 'text' : 'password'" outlined rounded dense hide-bottom-space no-error-icon placeholder="Password" :error="!!RegisterErrors.password" autocomplete="new-password">
+                        <template #append><q-icon :name="showPassword ? 'bi-eye' : 'bi-eye-slash'" size="18px" class="cursor-pointer" @click="showPassword = !showPassword" /></template>
+                    </q-input>
+                    <div class="lgn-err" v-if="RegisterErrors.password">{{ RegisterErrors.password }}</div>
+                </div>
+                <div>
+                    <q-input v-model="registerForm.confirmPassword" :type="showPassword ? 'text' : 'password'" outlined rounded dense hide-bottom-space no-error-icon placeholder="Confirm password" :error="!!RegisterErrors.confirmPassword" autocomplete="new-password" />
+                    <div class="lgn-err" v-if="RegisterErrors.confirmPassword">{{ RegisterErrors.confirmPassword }}</div>
+                </div>
+            </div>
+            <div class="lgn-hint">Use at least 8 characters.</div>
+
+            <q-btn type="submit" unelevated rounded no-caps color="primary" label="Create account" class="lgn-btn full-width" :loading="RegisterLoading" />
+        </form>
+
+        <div class="lgn-help">
+            Already have an account?
+            <router-link class="lgn-link lgn-link--b" to="/login">Sign in</router-link>
+        </div>
+
+        <div class="lgn-note">
+            <q-icon name="bi-shield-check" size="18px" />
+            <div>Your details are used only for your account and to reach you about your feedback, in line with the Data Privacy Act.</div>
         </div>
     </AuthShell>
 </template>
 
 <script setup>
+const SIDE_STEPS = [
+    {
+        "title": "Skip the one-time code",
+        "text": "File feedback in one step instead of waiting on an email verification each time."
+    },
+    {
+        "title": "A dashboard for your feedback",
+        "text": "See every feedback's status and updates in one place, no reference number needed."
+    },
+    {
+        "title": "Be known in the community",
+        "text": "Your name shows on discussions and survey responses instead of \"Anonymous.\""
+    }
+];
 import { ref, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
@@ -104,6 +91,7 @@ const router = useRouter();
 const authStore = useAuthStore();
 
 const RegisterLoading = ref(false);
+const showPassword = ref(false);
 const registerForm = reactive({
     firstname: '', lastname: '', email: '', phoneNo: '', password: '', confirmPassword: ''
 });

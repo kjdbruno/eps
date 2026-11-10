@@ -8,8 +8,8 @@
 // LLM_TIMEOUT_MS, default 40s, then aborted and the next provider tried). The first provider to
 // return a usable answer wins; only if every configured provider fails does askLLM throw.
 //
-//   1. Anthropic   ANTHROPIC_API_KEY   — the paid primary (claude-haiku-4-5). Vision-capable.
-//   2. OpenAI      OPENAI_API_KEY      — paid 2nd choice (gpt-4o-mini by default). Vision-capable.
+//   1. OpenAI      OPENAI_API_KEY      — the paid primary (gpt-4o-mini by default). Vision-capable.
+//   2. Anthropic   ANTHROPIC_API_KEY   — paid 2nd choice (claude-haiku-4-5). Vision-capable.
 //   3. Google Gemini  GEMINI_API_KEY   — FREE tier, no card. https://aistudio.google.com/apikey
 //                                        (gemini-flash-latest). Vision-capable, generous limits.
 //   4. Groq        GROQ_API_KEY        — FREE tier, no card. https://console.groq.com/keys
@@ -103,11 +103,6 @@ const askOpenAICompatible = async ({ baseURL, apiKey, model, vision, extraHeader
 // The chain. `enabled` decides whether this link is even attempted; `call(args)` runs it.
 const PROVIDERS = [
     {
-        name: 'anthropic',
-        enabled: () => !!anthropic,
-        call: (args) => askAnthropic(args),
-    },
-    {
         name: 'openai',
         enabled: () => !!process.env.OPENAI_API_KEY,
         call: (args) => askOpenAICompatible({
@@ -116,6 +111,11 @@ const PROVIDERS = [
             model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
             vision: true,
         }, args),
+    },
+    {
+        name: 'anthropic',
+        enabled: () => !!anthropic,
+        call: (args) => askAnthropic(args),
     },
     {
         name: 'gemini',

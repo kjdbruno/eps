@@ -1,0 +1,562 @@
+[
+ {
+  "legacyId": 1,
+  "firstname": "Administrator",
+  "lastname": "",
+  "username": "cicto.administrator",
+  "role": "super",
+  "office": "CICTO",
+  "isActive": true,
+  "createdAt": "2023-11-12T21:40:50.000Z"
+ },
+ {
+  "legacyId": 2,
+  "firstname": "Anthony L.",
+  "lastname": "Cabase",
+  "username": "gad.acabase",
+  "role": "workstation",
+  "office": "GAD",
+  "isActive": true,
+  "createdAt": "2023-11-13T05:50:04.000Z"
+ },
+ {
+  "legacyId": 3,
+  "firstname": "Jocelinda P.",
+  "lastname": "Gacad",
+  "username": "gad.jgacad",
+  "role": "workstation",
+  "office": "GAD",
+  "isActive": true,
+  "createdAt": "2023-11-13T05:52:26.000Z"
+ },
+ {
+  "legacyId": 4,
+  "firstname": "Christian A. Lee",
+  "lastname": "Noces",
+  "username": "ops.cnoces",
+  "role": "workstation",
+  "office": "OPS",
+  "isActive": true,
+  "createdAt": "2023-11-13T05:54:19.000Z"
+ },
+ {
+  "legacyId": 5,
+  "firstname": "Cherie M.",
+  "lastname": "Bugaoan",
+  "username": "ops.cbugaoan",
+  "role": "workstation",
+  "office": "OPS",
+  "isActive": true,
+  "createdAt": "2023-11-13T05:55:49.000Z"
+ },
+ {
+  "legacyId": 6,
+  "firstname": "Anabelle F.",
+  "lastname": "Obinario",
+  "username": "ossp.aobinario",
+  "role": "workstation",
+  "office": "OSSP",
+  "isActive": true,
+  "createdAt": "2023-11-13T05:58:03.000Z"
+ },
+ {
+  "legacyId": 7,
+  "firstname": "Lucky Joy N.",
+  "lastname": "Elfa",
+  "username": "adm.lelfa",
+  "role": "workstation",
+  "office": "ADM",
+  "isActive": true,
+  "createdAt": "2023-11-14T00:23:32.000Z"
+ },
+ {
+  "legacyId": 8,
+  "firstname": "Fernando T.",
+  "lastname": "Tabao",
+  "username": "gso.ftabao",
+  "role": "workstation",
+  "office": "GSO",
+  "isActive": false,
+  "createdAt": "2023-11-14T01:49:23.000Z"
+ },
+ {
+  "legacyId": 9,
+  "firstname": "Nelson G.",
+  "lastname": "Leonen Jr",
+  "username": "gso.nleonenjr",
+  "role": "workstation",
+  "office": "GSO",
+  "isActive": false,
+  "createdAt": "2023-11-14T01:50:49.000Z"
+ },
+ {
+  "legacyId": 10,
+  "firstname": "Elsa B.",
+  "lastname": "Bilag",
+  "username": "eem.ebilag",
+  "role": "workstation",
+  "office": "EEM",
+  "isActive": false,
+  "createdAt": "2023-11-14T01:58:37.000Z"
+ },
+ {
+  "legacyId": 11,
+  "firstname": "Flosie P.",
+  "lastname": "Decena",
+  "username": "vet.fdecena",
+  "role": "workstation",
+  "office": "VET",
+  "isActive": true,
+  "createdAt": "2023-11-14T02:46:33.000Z"
+ },
+ {
+  "legacyId": 12,
+  "firstname": "Ernestine T.",
+  "lastname": "Estillore",
+  "username": "vet.eestillore",
+  "role": "workstation",
+  "office": "VET",
+  "isActive": true,
+  "createdAt": "2023-11-14T02:48:27.000Z"
+ },
+ {
+  "legacyId": 13,
+  "firstname": "Raymund Ryan P.",
+  "lastname": "Batac Jr",
+  "username": "cho.rbatacjr",
+  "role": "workstation",
+  "office": "CHO",
+  "isActive": true,
+  "createdAt": "2023-11-14T05:37:43.000Z"
+ },
+ {
+  "legacyId": 14,
+  "firstname": "Vaneza M.",
+  "lastname": "Gruta",
+  "username": "cho.vgruta",
+  "role": "workstation",
+  "office": "CHO",
+  "isActive": true,
+  "createdAt": "2023-11-14T05:39:43.000Z"
+ },
+ {
+  "legacyId": 15,
+  "firstname": "Andrew F.",
+  "lastname": "Caguioa",
+  "username": "cho.acaguioa",
+  "role": "workstation",
+  "office": "CHO",
+  "isActive": true,
+  "createdAt": "2023-11-14T05:41:41.000Z"
+ },
+ {
+  "legacyId": 16,
+  "firstname": "Jonalyn D.",
+  "lastname": "Jubilo",
+  "username": "clo.jjubilo",
+  "role": "workstation",
+  "office": "CLO",
+  "isActive": false,
+  "createdAt": "2023-11-14T07:30:33.000Z"
+ },
+ {
+  "legacyId": 17,
+  "firstname": "Jennifer D.",
+  "lastname": "Flores",
+  "username": "pdo.jflores",
+  "role": "workstation",
+  "office": "PDO",
+  "isActive": true,
+  "createdAt": "2023-11-14T07:32:57.000Z"
+ },
+ {
+  "legacyId": 18,
+  "firstname": "Eric Paolo A.",
+  "lastname": "Guhit",
+  "username": "cto.eguhit",
+  "role": "workstation",
+  "office": "CTO",
+  "isActive": false,
+  "createdAt": "2023-11-14T07:34:19.000Z"
+ },
+ {
+  "legacyId": 19,
+  "firstname": "Mark Kevin D.",
+  "lastname": "Rimando",
+  "username": "cdrrmo.mrimando",
+  "role": "workstation",
+  "office": "CDRRMO",
+  "isActive": true,
+  "createdAt": "2023-11-15T02:06:21.000Z"
+ },
+ {
+  "legacyId": 20,
+  "firstname": "Ariel O.",
+  "lastname": "Garcia",
+  "username": "osm.agarcia",
+  "role": "workstation",
+  "office": "OSM",
+  "isActive": false,
+  "createdAt": "2023-11-15T02:08:19.000Z"
+ },
+ {
+  "legacyId": 21,
+  "firstname": "Romel M.",
+  "lastname": "Payoyo",
+  "username": "cbo.rpayoyo",
+  "role": "workstation",
+  "office": "CBO",
+  "isActive": true,
+  "createdAt": "2023-11-15T05:50:15.000Z"
+ },
+ {
+  "legacyId": 23,
+  "firstname": "Jem E.",
+  "lastname": "Tamani",
+  "username": "oce.jtamani",
+  "role": "workstation",
+  "office": "OCE",
+  "isActive": true,
+  "createdAt": "2023-11-15T07:54:47.000Z"
+ },
+ {
+  "legacyId": 24,
+  "firstname": "Erwin John P.",
+  "lastname": "Mendoza",
+  "username": "oce.emendoza",
+  "role": "workstation",
+  "office": "OCE",
+  "isActive": false,
+  "createdAt": "2023-11-15T07:58:03.000Z"
+ },
+ {
+  "legacyId": 25,
+  "firstname": "Lyra A.",
+  "lastname": "Sanchez",
+  "username": "oca.lsanchez",
+  "role": "workstation",
+  "office": "OCA",
+  "isActive": false,
+  "createdAt": "2023-11-16T01:37:49.000Z"
+ },
+ {
+  "legacyId": 26,
+  "firstname": "Heavenly Joy A.",
+  "lastname": "Bersamina",
+  "username": "aca.hbersamina",
+  "role": "workstation",
+  "office": "ACA",
+  "isActive": true,
+  "createdAt": "2023-11-16T01:42:34.000Z"
+ },
+ {
+  "legacyId": 27,
+  "firstname": "Robymien R.",
+  "lastname": "Rillera",
+  "username": "oca.rrillera",
+  "role": "workstation",
+  "office": "OCA",
+  "isActive": false,
+  "createdAt": "2023-11-16T01:44:06.000Z"
+ },
+ {
+  "legacyId": 39,
+  "firstname": "Jastine Jade B.",
+  "lastname": "Galleto",
+  "username": "pio.jgalleto",
+  "role": "admin",
+  "office": "PIO",
+  "isActive": false,
+  "createdAt": "2023-11-16T06:42:20.000Z"
+ },
+ {
+  "legacyId": 40,
+  "firstname": "Vanjoe D.",
+  "lastname": "Senting",
+  "username": "hrmo.vsenting",
+  "role": "workstation",
+  "office": "HRMO",
+  "isActive": true,
+  "createdAt": "2023-11-16T06:44:52.000Z"
+ },
+ {
+  "legacyId": 41,
+  "firstname": "Jackielyn R.",
+  "lastname": "Tadina",
+  "username": "cswd.jtadina",
+  "role": "workstation",
+  "office": "CSWD",
+  "isActive": true,
+  "createdAt": "2023-11-16T06:47:31.000Z"
+ },
+ {
+  "legacyId": 42,
+  "firstname": "Nina C.",
+  "lastname": "Tamani",
+  "username": "pdao.ntamani",
+  "role": "workstation",
+  "office": "PDAO",
+  "isActive": true,
+  "createdAt": "2023-11-16T06:49:20.000Z"
+ },
+ {
+  "legacyId": 46,
+  "firstname": "Jeremy Jen C.",
+  "lastname": "Abad",
+  "username": "hrmo.jabad",
+  "role": "workstation",
+  "office": "HRMO",
+  "isActive": true,
+  "createdAt": "2023-11-16T07:57:05.000Z"
+ },
+ {
+  "legacyId": 48,
+  "firstname": "Maria Theresa P.",
+  "lastname": "Garcia",
+  "username": "lebdo.mgarcia",
+  "role": "workstation",
+  "office": "LEBDO",
+  "isActive": true,
+  "createdAt": "2023-11-16T08:34:09.000Z"
+ },
+ {
+  "legacyId": 49,
+  "firstname": "Matet B.",
+  "lastname": "Bruno",
+  "username": "agr.mbruno",
+  "role": "workstation",
+  "office": "AGR",
+  "isActive": true,
+  "createdAt": "2023-11-16T09:07:53.000Z"
+ },
+ {
+  "legacyId": 149,
+  "firstname": "Katherine Iona S.",
+  "lastname": "Muller",
+  "username": "cenro.kmuller",
+  "role": "workstation",
+  "office": "CENRO",
+  "isActive": true,
+  "createdAt": "2024-04-22T07:11:15.000Z"
+ },
+ {
+  "legacyId": 150,
+  "firstname": "Antonio M.",
+  "lastname": "Navarro",
+  "username": "reg.anavarro",
+  "role": "workstation",
+  "office": "REG",
+  "isActive": true,
+  "createdAt": "2024-04-22T07:15:09.000Z"
+ },
+ {
+  "legacyId": 151,
+  "firstname": "Mikee Jubea R.",
+  "lastname": "Raya",
+  "username": "peso.mraya",
+  "role": "workstation",
+  "office": "PESO",
+  "isActive": true,
+  "createdAt": "2024-04-23T03:50:42.000Z"
+ },
+ {
+  "legacyId": 162,
+  "firstname": "Erwin G.",
+  "lastname": "Beleo",
+  "username": "pio.ebeleo",
+  "role": "admin",
+  "office": "PIO",
+  "isActive": true,
+  "createdAt": "2024-05-08T06:20:27.000Z"
+ },
+ {
+  "legacyId": 184,
+  "firstname": "Germie O.",
+  "lastname": "Deang",
+  "username": "cicto.gdeang",
+  "role": "super",
+  "office": "CICTO",
+  "isActive": true,
+  "createdAt": "2024-06-18T06:28:39.000Z"
+ },
+ {
+  "legacyId": 214,
+  "firstname": "Mark Anthony D.",
+  "lastname": "Latoja",
+  "username": "pio.mlatoja",
+  "role": "admin",
+  "office": "PIO",
+  "isActive": false,
+  "createdAt": "2024-06-25T08:41:29.000Z"
+ },
+ {
+  "legacyId": 217,
+  "firstname": "Mark Anthony",
+  "lastname": "Latoja",
+  "username": "pio.mlatoja2",
+  "role": "admin",
+  "office": "PIO",
+  "isActive": true,
+  "createdAt": "2024-06-26T02:43:19.000Z"
+ },
+ {
+  "legacyId": 220,
+  "firstname": "Mark Anthony B.",
+  "lastname": "Inocencio",
+  "username": "pdao.minocencio",
+  "role": "workstation",
+  "office": "PDAO",
+  "isActive": true,
+  "createdAt": "2024-06-28T05:36:42.000Z"
+ },
+ {
+  "legacyId": 245,
+  "firstname": "Erwin G.",
+  "lastname": "Beleo",
+  "username": "pio.ebeleo2",
+  "role": "workstation",
+  "office": "PIO",
+  "isActive": true,
+  "createdAt": "2024-07-23T05:13:12.000Z"
+ },
+ {
+  "legacyId": 247,
+  "firstname": "Reziel Marie M.",
+  "lastname": "Sias",
+  "username": "aca.rsias",
+  "role": "workstation",
+  "office": "ACA",
+  "isActive": true,
+  "createdAt": "2024-07-29T03:01:31.000Z"
+ },
+ {
+  "legacyId": 249,
+  "firstname": "Chrity F.",
+  "lastname": "Meris",
+  "username": "ocvm.cmeris",
+  "role": "workstation",
+  "office": "OCVM",
+  "isActive": false,
+  "createdAt": "2024-07-30T07:07:58.000Z"
+ },
+ {
+  "legacyId": 250,
+  "firstname": "Wilbert C.",
+  "lastname": "Mayo",
+  "username": "oca.wmayo",
+  "role": "workstation",
+  "office": "OCA",
+  "isActive": true,
+  "createdAt": "2024-07-30T07:10:59.000Z"
+ },
+ {
+  "legacyId": 251,
+  "firstname": "Mildred Joy G.",
+  "lastname": "De Vera",
+  "username": "oca.mdevera",
+  "role": "workstation",
+  "office": "OCA",
+  "isActive": true,
+  "createdAt": "2024-07-30T07:14:06.000Z"
+ },
+ {
+  "legacyId": 252,
+  "firstname": "Lorena L.",
+  "lastname": "Peridas",
+  "username": "eem.lperidas",
+  "role": "workstation",
+  "office": "EEM",
+  "isActive": true,
+  "createdAt": "2024-07-30T07:16:25.000Z"
+ },
+ {
+  "legacyId": 255,
+  "firstname": "Eunice C.",
+  "lastname": "Apilado",
+  "username": "cto.eapilado",
+  "role": "workstation",
+  "office": "CTO",
+  "isActive": false,
+  "createdAt": "2024-08-05T00:34:44.000Z"
+ },
+ {
+  "legacyId": 303,
+  "firstname": "Eugene C.",
+  "lastname": "Peralta",
+  "username": "cdrrmo.eperalta",
+  "role": "workstation",
+  "office": "CDRRMO",
+  "isActive": true,
+  "createdAt": "2024-10-14T07:40:59.000Z"
+ },
+ {
+  "legacyId": 409,
+  "firstname": "Richelle",
+  "lastname": "Fusilero",
+  "username": "clo.rfusilero",
+  "role": "workstation",
+  "office": "CLO",
+  "isActive": true,
+  "createdAt": "2025-09-08T01:05:31.000Z"
+ },
+ {
+  "legacyId": 410,
+  "firstname": "Cee Jaye",
+  "lastname": "Gumangan",
+  "username": "clo.cgumangan",
+  "role": "workstation",
+  "office": "CLO",
+  "isActive": true,
+  "createdAt": "2025-09-08T01:07:01.000Z"
+ },
+ {
+  "legacyId": 554,
+  "firstname": "Joihane Rhaika N.",
+  "lastname": "Nadal",
+  "username": "cto.jnadal",
+  "role": "workstation",
+  "office": "CTO",
+  "isActive": true,
+  "createdAt": "2026-07-20T01:20:41.000Z"
+ },
+ {
+  "legacyId": 559,
+  "firstname": "Ma. Kristia H.",
+  "lastname": "Pornel",
+  "username": "pio.mpornel",
+  "role": "admin",
+  "office": "PIO",
+  "isActive": true,
+  "createdAt": "2026-07-23T03:26:23.000Z"
+ },
+ {
+  "legacyId": 569,
+  "firstname": "Rodel",
+  "lastname": "C.Loyola",
+  "username": "gso.rcloyola",
+  "role": "workstation",
+  "office": "GSO",
+  "isActive": true,
+  "createdAt": "2026-07-28T06:47:45.000Z"
+ },
+ {
+  "legacyId": 570,
+  "firstname": "Joan E.",
+  "lastname": "Ubungen",
+  "username": "gso.jubungen",
+  "role": "workstation",
+  "office": "GSO",
+  "isActive": true,
+  "createdAt": "2026-07-28T06:48:30.000Z"
+ },
+ {
+  "legacyId": 595,
+  "firstname": "Julie Ann B.",
+  "lastname": "Cadao",
+  "username": "agr.jcadao",
+  "role": "workstation",
+  "office": "AGR",
+  "isActive": true,
+  "createdAt": "2026-09-08T23:29:42.000Z"
+ }
+]

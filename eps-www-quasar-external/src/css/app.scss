@@ -84,3 +84,6 @@
     // Focus ring tinted to the confirm colour instead of SweetAlert's default cornflower blue.
     --swal2-outline: 0 0 0 3px rgba(0, 78, 168, 0.35);
 }
+
+// The citizen portal look (from the revapp portal) — header, hero, tiles, rows, sign-in card, modal.
+@import './portal.scss';

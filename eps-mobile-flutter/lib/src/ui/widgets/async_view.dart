@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../api/api_exception.dart';
+import 'eps_ui.dart';
+import 'eps_loader.dart';
 
 /// Standard loading / error / retry wrapper around a one-shot [Future].
 /// Pair with a `Key` bump or a rebuilt future to refresh.
@@ -22,7 +24,7 @@ class AsyncView<T> extends StatelessWidget {
       future: future,
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const EpsLoader();
         }
         if (snap.hasError) {
           final err = snap.error;
@@ -45,20 +47,18 @@ class _ErrorState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.cloud_off, size: 40, color: Colors.grey),
-            const SizedBox(height: 12),
-            Text(message, textAlign: TextAlign.center),
-            if (onRetry != null) ...[
-              const SizedBox(height: 16),
-              OutlinedButton(onPressed: onRetry, child: const Text('Retry')),
-            ],
-          ],
-        ),
+      child: EmptyState(
+        icon: Icons.cloud_off_rounded,
+        title: 'Could not load',
+        text: message,
+        action: onRetry == null
+            ? null
+            : OutlinedButton(
+                style:
+                    OutlinedButton.styleFrom(minimumSize: const Size(140, 46)),
+                onPressed: onRetry,
+                child: const Text('Retry'),
+              ),
       ),
     );
   }

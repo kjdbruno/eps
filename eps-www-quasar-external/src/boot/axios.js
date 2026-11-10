@@ -42,6 +42,12 @@ const api = axios.create({
   // No `withCredentials: true` needed here for JWTs, as it's not cookie-based session
 });
 
+// what the API says when the session itself is no longer good (see middlewares/AuthMiddleware.js)
+const SESSION_ERRORS = [
+  'No token provided', 'Token not properly formatted', 'Token expired', 'Failed to authenticate token',
+  'Account disabled', 'Session invalidated', 'API key is missing', 'Invalid API key',
+];
+
 export default boot(({ app, router }) => {
   // Inject axios instance for global use
   app.config.globalProperties.$axios = axios;
@@ -68,9 +74,17 @@ export default boot(({ app, router }) => {
       const originalRequest = error.config;
       const authStore = useAuthStore();
 
-      // Check if the error is 401 Unauthorized or 403 Forbidden
-      // And ensure it's not the login request itself (to avoid loop)
-      if (error.response && (error.response.status === 401 || error.response.status === 403) && originalRequest.url !== '/') {
+      // 428: the account has to choose its own password first (see ChangePasswordPage.vue): raise the flag and go there
+      if (error.response?.status === 428 && error.response.data?.mustChangePassword && authStore.user) {
+        authStore.user = { ...authStore.user, mustChangePassword: true };
+        localStorage.setItem('user', JSON.stringify(authStore.user));
+        router.push('/change-password');
+      }
+
+      // Only a failure of the SESSION sends the person back to the start page: no or a bad token, an expired or ended session, a
+      // disabled account, a bad API key. Any other 401/403 (a wrong password at sign-in, a wrong code, an action this role may not do)
+      // is the page's own to show: it stays where it is and shows the message.
+      if (error.response && (error.response.status === 401 || error.response.status === 403) && SESSION_ERRORS.includes(error.response.data?.error)) {
         console.warn('Authentication error:', error.response.data.message || error.response.data.error);
 
         // Check for specific token expiration message

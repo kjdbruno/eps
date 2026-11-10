@@ -54,46 +54,56 @@ class ComplaintService {
       'longitude': longitude.toString(),
       'files': await _files(photos),
     });
-    final res =
-        await _api.post<Map<String, dynamic>>('/complaint/otp/send', body: form);
+    final res = await _api.post<Map<String, dynamic>>(
+      '/complaint/otp/send',
+      body: form,
+    );
     return asString(res.data?['message'], fallback: 'Email sent.');
   }
 
   /// Guest flow, step 2 — `POST /complaint/otp/validate` → reference number.
   Future<String> validateComplaintOtp(String otp) async {
-    final res = await _api
-        .post<Map<String, dynamic>>('/complaint/otp/validate', body: {'otp': otp});
+    final res = await _api.post<Map<String, dynamic>>(
+      '/complaint/otp/validate',
+      body: {'otp': otp},
+    );
     return asString(asMap(res.data?['complaint'])['referenceNo']);
   }
 
-  /// Public lookup — `GET /complaint/track/:referenceNo?otp=`.
-  Future<Complaint> track(String referenceNo, String otp) async {
-    final res = await _api.get<Map<String, dynamic>>(
-      '/complaint/track/${Uri.encodeComponent(referenceNo)}',
-      query: {'otp': otp},
-    );
-    return Complaint.fromJson(asMap(res.data?['data']));
-  }
-
-  /// Signed-in filing (no OTP) — `POST /complaint/account` (multipart).
-  Future<void> fileAccountComplaint({
+  /// Signed-in filing (no OTP) — `POST /complaint/account` (multipart). Returns the new reference
+  /// number and where it stands (`ongoing` once routed to an office, `unassigned` otherwise).
+  Future<({String referenceNo, String status})> fileAccountComplaint({
     required String content,
+    bool isAnonymous = false,
     required double latitude,
     required double longitude,
     List<XFile> photos = const [],
   }) async {
     final form = FormData.fromMap({
+      // "file anonymously": hides only who filed it
+      'isAnonymous': isAnonymous.toString(),
       'content': content,
       'latitude': latitude.toString(),
       'longitude': longitude.toString(),
       'files': await _files(photos),
     });
-    await _api.post<dynamic>('/complaint/account', body: form);
+    final res = await _api.post<Map<String, dynamic>>(
+      '/complaint/account',
+      body: form,
+    );
+    final complaint = asMap(res.data?['complaint']);
+    return (
+      referenceNo: asString(complaint['referenceNo']),
+      status: asString(complaint['status']),
+    );
   }
 
   /// Link a previously-filed complaint to the account —
   /// `POST /complaint/claim`.
-  Future<String> claim({required String referenceNo, required String otp}) async {
+  Future<String> claim({
+    required String referenceNo,
+    required String otp,
+  }) async {
     final res = await _api.post<Map<String, dynamic>>(
       '/complaint/claim',
       body: {'referenceNo': referenceNo, 'otp': otp},
@@ -131,6 +141,16 @@ class ComplaintService {
       'files': await _files(photos),
     });
     await _api.post<dynamic>('/response/respond', body: form);
+  }
+
+  /// Cancel the citizen's own feedback until it is completed — `POST /complaint/:id/cancel`.
+  Future<void> cancel(int id, {String? reason}) async {
+    await _api.post<dynamic>(
+      '/complaint/$id/cancel',
+      body: {
+        if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim(),
+      },
+    );
   }
 
   /// Rate a staff response — `POST /response/rate`.

@@ -37,7 +37,7 @@ class EvidenceGallery extends StatelessWidget {
             GestureDetector(
               onTap: () => _openFull(context, _providerFor(f.file)),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(14),
                 child: Image(
                   image: _providerFor(f.file),
                   width: 84,
@@ -72,15 +72,24 @@ class EvidenceGallery extends StatelessWidget {
   Widget _broken() => Container(
         width: 84,
         height: 84,
-        color: Colors.grey.shade200,
-        child: const Icon(Icons.broken_image_outlined),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF1F2F5),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child:
+            const Icon(Icons.broken_image_outlined, color: Color(0xFF8493AC)),
       );
 
   void _openFull(BuildContext context, ImageProvider image) {
     showDialog<void>(
       context: context,
       builder: (_) => Dialog(
-        child: InteractiveViewer(child: Image(image: image)),
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(12),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(18),
+          child: InteractiveViewer(child: Image(image: image)),
+        ),
       ),
     );
   }

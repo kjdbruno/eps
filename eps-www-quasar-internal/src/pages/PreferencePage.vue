@@ -1,61 +1,63 @@
 <template>
     <div>
-        <!-- Same pill-button tab pattern as the Complaint detail modal's response/history switch. -->
-        <q-card-section class="q-pa-md radius-sm bg-accent q-mb-md">
-            <div class="q-gutter-xs">
-                <q-btn
-                    v-for="t in tabs" :key="t.component"
-                    unelevated no-caps rounded size="sm"
-                    :class="PreferenceStore.component === t.component ? 'bg-primary text-white' : 'bg-accent'"
-                    :label="t.label"
-                    @click="PreferenceStore.component = t.component"
-                />
+        <!-- Pinned to the top while the list under it scrolls (same header as the revapp Preference
+             pages): eyebrow + title. Switching section is done from the drawer's Preference group. -->
+        <div class="sticky-header q-pb-md">
+            <div class="rc-header pref-header" style="margin-bottom: 0;">
+                <div>
+                    <div class="rc-eyebrow">preference &middot; {{ section?.label || 'none' }}</div>
+                    <div class="text-h5 text-capitalize">{{ section?.label || 'preference' }} preference</div>
+                </div>
             </div>
-        </q-card-section>
-        <div class="q-mt-md">
-            <component v-if="PreferenceStore.component" :is="components[PreferenceStore.component]" :key="PreferenceStore.component" />
-            <div v-else class="text-center text-grey q-pa-xl">
-                <q-icon name="bi-sliders" size="2em" class="q-mb-sm" />
-                <div class="text-caption text-uppercase">no preference pages available for your role</div>
-            </div>
+        </div>
+
+        <component v-if="section" :is="section.component" :key="section.name" />
+        <div v-else class="rc-empty">
+            <q-icon name="bi-sliders" size="26px" />
+            <div class="rc-empty-title">No preference pages available for your role</div>
         </div>
     </div>
 </template>
 
 <script setup>
-import { computed } from 'vue';
-import { usePreferenceStore } from '../stores/preference-store';
+import { computed, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from 'src/stores/auth-store';
 import UserPreferenceComponent from '../components/UserPreferenceComponent.vue';
 import OfficePreferenceComponent from '../components/OfficePreferenceComponent.vue';
 import HolidayPreferenceComponent from '../components/HolidayPreferenceComponent.vue';
+import CannedPreferenceComponent from '../components/CannedPreferenceComponent.vue';
+import ClientPreferenceComponent from '../components/ClientPreferenceComponent.vue';
 
-const PreferenceStore = usePreferenceStore();
+const route = useRoute();
+const router = useRouter();
 const authStore = useAuthStore();
 
-// User/Office are super-only; Holiday stays super/admin — matches UserRoutes.js/OfficeRoutes.js/
-// HolidayRoutes.js server-side. The nav link itself is already hidden for anyone who'd see zero
-// tabs here (MainLayout.vue), but this still guards direct navigation to /preference.
-const ALL_TABS = [
-    { component: 'UserPreferenceComponent', label: 'user', roles: ['super'] },
-    { component: 'OfficePreferenceComponent', label: 'office', roles: ['super'] },
-    { component: 'HolidayPreferenceComponent', label: 'holiday', roles: ['super', 'admin'] },
+// One entry per section, in the order the drawer lists them. Office/User are super-only; Holiday
+// stays super/admin — matches OfficeRoutes.js/UserRoutes.js/HolidayRoutes.js server-side and the
+// route guards in router/routes.js.
+const SECTIONS = [
+    { name: 'office preference', label: 'office', to: '/preference/office', component: OfficePreferenceComponent, roles: ['super', 'admin'] },
+    { name: 'user preference', label: 'user', to: '/preference/user', component: UserPreferenceComponent, roles: ['super'] },
+    { name: 'holiday preference', label: 'holiday', to: '/preference/holiday', component: HolidayPreferenceComponent, roles: ['super', 'admin'] },
+    { name: 'canned preference', label: 'canned messages', to: '/preference/canned', component: CannedPreferenceComponent, roles: ['super', 'admin'] },
+    { name: 'client preference', label: 'client accounts', to: '/preference/clients', component: ClientPreferenceComponent, roles: ['super', 'admin'] },
 ];
-const tabs = computed(() => ALL_TABS.filter(t => t.roles.includes(authStore.user?.role)));
+const allowed = computed(() => SECTIONS.filter(s => s.roles.includes(authStore.user?.role)));
 
-// Land on the first tab this role can actually see, not always "user" — an admin opening this
-// page directly would otherwise start on a tab (user) they don't have.
-if (!tabs.value.some(t => t.component === PreferenceStore.component)) {
-    PreferenceStore.component = tabs.value[0]?.component || null;
-}
-
-const components = {
-    UserPreferenceComponent,
-    OfficePreferenceComponent,
-    HolidayPreferenceComponent,
-};
+// The section for the current route; on the bare /preference there is none yet, so send the person
+// to the first one their role can open.
+const section = computed(() => SECTIONS.find(s => s.name === route.name) || null);
+watch(() => route.name, (name) => {
+    if (name === 'preference' && allowed.value.length) router.replace(allowed.value[0].to);
+}, { immediate: true });
 </script>
 
 <style scoped>
-
+/* the list rail is fixed to the right edge on wide screens, so the header stops short of it */
+@media (min-width: 1201px) {
+    .pref-header {
+        padding-right: 396px;
+    }
+}
 </style>

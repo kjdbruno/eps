@@ -6,6 +6,7 @@ const Handlebars = require('handlebars'); // Import Handlebars
 const pug = require('pug');
 const moment = require('moment');
 const { Office, KioskRating, Sex, Rating, Staff } = require('../models');
+const { tagReport } = require('../utils/sentiment');
 const { resolvePeriodRange } = require('../utils/periodRange');
 const { logActivity } = require('../utils/activityLog');
 
@@ -83,6 +84,13 @@ exports.getAllFeedbacks = async (req, res) => {
                              WHERE kr2.officeId = Office.id AND kr2.isActive = true AND kr2.date >= '${sinceStr}' AND kr2.date <= '${untilStr}')
                         `),
                         'totalFeedback'
+                    ],
+                    [
+                        Sequelize.literal(`
+                            (SELECT COUNT(*) FROM kioskratings AS kr3
+                             WHERE kr3.officeId = Office.id AND kr3.isActive = true AND kr3.sentiment = 'negative' AND kr3.date >= '${sinceStr}' AND kr3.date <= '${untilStr}')
+                        `),
+                        'negativeFeedback'
                     ]
                 ]
             },
@@ -106,12 +114,28 @@ exports.getFeedbackAnalytics = async (req, res) => {
     const range = resolvePeriodRange(req.query.period, req.query.year);
 
     try {
+        // A workstation account is always looking at its own office. A supervisor looks at the whole system, or, when
+        // an office is chosen on the page (officeId), at that one office: the same figures, scoped.
+        let officeId = scope.officeId;
+        let officeLabel = scope.label;
+        let office = null;
+        if (!officeId && req.query.officeId) {
+            officeId = parseInt(req.query.officeId, 10) || null;
+        }
+        if (officeId) {
+            office = await Office.findByPk(officeId, { attributes: ['id', 'name', 'alias', 'mandate'], raw: true });
+            if (!office) {
+                return res.status(404).json({ message: 'Office not found.' });
+            }
+            officeLabel = office.alias || office.name;
+        }
+
         const where = { isActive: true, date: { [Op.gte]: range.since, [Op.lte]: range.until } };
-        if (scope.officeId) where.officeId = scope.officeId;
+        if (officeId) where.officeId = officeId;
 
         const rows = await KioskRating.findAll({
             where,
-            attributes: ['id', 'officeId', 'date', 'type', 'sex', 'entryFrom', 'cc1', ...SQD_KEYS],
+            attributes: ['id', 'officeId', 'date', 'type', 'sex', 'age', 'entryFrom', 'cc1', 'cc2', 'cc3', 'sentiment', 'sentimentReason', ...SQD_KEYS],
             raw: true
         });
 
@@ -154,11 +178,21 @@ exports.getFeedbackAnalytics = async (req, res) => {
             });
         }
         const volumeTrend = bucketDefs.map(b => ({ label: b.label, count: 0 }));
+        const trendSums = bucketDefs.map(() => ({ sum: 0, count: 0 }));
         rows.forEach(r => {
             const d = moment(r.date);
             const idx = bucketDefs.findIndex(b => d.isBetween(b.start, b.end, null, '[]'));
-            if (idx >= 0) volumeTrend[idx].count++;
+            if (idx >= 0) {
+                volumeTrend[idx].count++;
+                trendSums[idx].sum += ratingPercent(r);
+                trendSums[idx].count++;
+            }
         });
+        // how satisfied they were, over the same buckets (a bucket with no report has no average)
+        const satisfactionTrend = bucketDefs.map((b, i) => ({
+            label: b.label,
+            avgPercentage: trendSums[i].count ? +(trendSums[i].sum / trendSums[i].count).toFixed(1) : null
+        }));
 
         // Avg. rating by office — the panel that actually flags which offices need attention.
         // For a scoped workstation view this naturally comes back as a single row (their own),
@@ -214,23 +248,52 @@ exports.getFeedbackAnalytics = async (req, res) => {
             '4': "Didn't know / didn't see"
         });
 
+        const ageMix = [
+            { label: 'Young dependents (0-14)', min: 0, max: 14 },
+            { label: 'Working age (15-64)', min: 15, max: 64 },
+            { label: 'Older (65+)', min: 65, max: Infinity },
+        ].map(b => ({
+            label: b.label,
+            count: rows.filter(r => r.age != null && r.age !== '' && Number(r.age) >= b.min && Number(r.age) <= b.max).length
+        }));
+        const cc2Mix = countBy('cc2', { '1': 'Easy to see', '2': 'Somewhat easy to see', '3': 'Difficult to see', '4': 'Not visible at all', '5': 'N/A' });
+        const cc3Mix = countBy('cc3', { '1': 'Helped very much', '2': 'Somewhat helped', '3': 'Did not help', '4': 'N/A' });
+
+        // The reports themselves, newest first: only for one office (the list the office works from)
+        const reports = officeId
+            ? rows
+                .map(r => ({ id: r.id, date: r.date, entryFrom: r.entryFrom, averageSqdPercentage: +ratingPercent(r).toFixed(2), sentiment: r.sentiment, sentimentReason: r.sentimentReason }))
+                .sort((a, b) => new Date(b.date) - new Date(a.date))
+            : [];
+
         // Spread of individual ratings, not just the overall average — an 80% average can hide a
         // 50/50 split between "excellent" and "needs improvement" that the average alone masks.
         const ratingDistribution = bucketRatingDistribution(rows.map(ratingPercent));
 
+        // how the reports read (positive / neutral / negative, see utils/sentiment.js)
+        const sentimentMix = { positive: 0, neutral: 0, negative: 0, unread: 0 };
+        rows.forEach(r => { sentimentMix[r.sentiment || 'unread']++; });
+
         return res.json({
             data: {
                 range: { period: range.period, year: range.year, label: range.label, since: range.since, until: range.until },
-                scope: { officeId: scope.officeId, label: scope.label },
+                scope: { officeId, label: officeLabel, locked: !!scope.officeId },
+                office,
                 kpis: { totalFeedback, avgSatisfaction, kioskCount, manualCount, charterAwareRate },
                 volumeTrend,
+                satisfactionTrend,
+                ageMix,
+                cc2Mix,
+                cc3Mix,
+                reports,
                 ratingByOffice,
                 sqdAverages,
                 clientTypeMix,
                 sexMix,
                 entryMethodMix,
                 cc1Mix,
-                ratingDistribution
+                ratingDistribution,
+                sentimentMix
             }
         });
     } catch (error) {
@@ -309,6 +372,7 @@ exports.createFeedbackKiosk = async (req, res) => {
             description: `Recorded a manual CSM report entry for ${office ? (office.alias || office.name) : `office #${officeId}`}`
         });
 
+        tagReport(kiosk.id); // read in the background
         res.status(201).json({ message: "Rating Created Successfully.", kiosk, rating });
     } catch (error) {
         res.status(500).json({ error: error.message });

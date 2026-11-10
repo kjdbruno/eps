@@ -2,23 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../state/auth_controller.dart';
-import '../ui/screens/account_screen.dart';
+import '../ui/screens/change_password_screen.dart';
 import '../ui/screens/complaint_detail_screen.dart';
 import '../ui/screens/discussion_list_screen.dart';
 import '../ui/screens/discussion_thread_screen.dart';
 import '../ui/screens/file_complaint_screen.dart';
-import '../ui/screens/forgot_password_screen.dart';
 import '../ui/screens/home_screen.dart';
 import '../ui/screens/landing_screen.dart';
-import '../ui/screens/login_screen.dart';
 import '../ui/screens/my_complaints_screen.dart';
 import '../ui/screens/poll_list_screen.dart';
 import '../ui/screens/poll_vote_screen.dart';
-import '../ui/screens/register_screen.dart';
 import '../ui/screens/splash_screen.dart';
-import '../ui/screens/track_screen.dart';
-import '../ui/screens/verify_complaint_screen.dart';
-import '../ui/screens/verify_email_screen.dart';
 import '../ui/shell/home_shell.dart';
 
 class AppRouter {
@@ -36,29 +30,17 @@ class AppRouter {
     routes: [
       GoRoute(path: '/splash', builder: (_, __) => const SplashScreen()),
       GoRoute(path: '/', builder: (_, __) => const LandingScreen()),
-      GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
-      GoRoute(path: '/register', builder: (_, __) => const RegisterScreen()),
+      // The first login of an account that still has the temporary password it was emailed
       GoRoute(
-        path: '/verify-email',
-        builder: (_, s) =>
-            VerifyEmailScreen(email: s.uri.queryParameters['email'] ?? ''),
+        path: '/change-password',
+        builder: (_, __) => const ChangePasswordScreen(),
       ),
-      GoRoute(
-        path: '/forgot-password',
-        builder: (_, s) =>
-            ForgotPasswordScreen(email: s.uri.queryParameters['email'] ?? ''),
-      ),
-
-      // Guest complaint flow
+      // Sign in, create account, forgot password and the verification codes are slide-up sheets
+      // (see ui/widgets/auth_sheet.dart), not routes.
       GoRoute(
         path: '/file-complaint',
         builder: (_, __) => const FileComplaintScreen(),
       ),
-      GoRoute(
-        path: '/verify-complaint',
-        builder: (_, __) => const VerifyComplaintScreen(),
-      ),
-      GoRoute(path: '/track', builder: (_, __) => const TrackScreen()),
 
       // Detail screens — top-level, so they cover the shell when pushed.
       GoRoute(
@@ -91,7 +73,9 @@ class AppRouter {
         branches: [
           StatefulShellBranch(
             navigatorKey: _shellKey,
-            routes: [GoRoute(path: '/home', builder: (_, __) => const HomeScreen())],
+            routes: [
+              GoRoute(path: '/home', builder: (_, __) => const HomeScreen()),
+            ],
           ),
           StatefulShellBranch(
             routes: [
@@ -117,14 +101,6 @@ class AppRouter {
               ),
             ],
           ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/home/account',
-                builder: (_, __) => const AccountScreen(),
-              ),
-            ],
-          ),
         ],
       ),
     ],
@@ -140,7 +116,13 @@ class AppRouter {
     if (loc == '/splash') return _auth.isAuthenticated ? '/home' : '/';
 
     final authed = _auth.isAuthenticated;
-    const authEntryPoints = {'/', '/login', '/register', '/verify-email'};
+
+    // Until they choose their own password the API refuses everything else, so nothing else is shown.
+    final mustChange = authed && _auth.user!.mustChangePassword;
+    if (mustChange) return loc == '/change-password' ? null : '/change-password';
+    if (loc == '/change-password') return authed ? '/home' : '/';
+
+    const authEntryPoints = {'/'};
 
     if (authed && authEntryPoints.contains(loc)) return '/home';
 

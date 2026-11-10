@@ -89,6 +89,11 @@ module.exports = (sequelize, DataTypes) => { // <--- THIS IS THE REQUIRED FUNCTI
       type: DataTypes.ENUM('super', 'admin', 'workstation', 'citizen', 'monitoring'),
       allowNull: false
     },
+    // the Philippine mobile number of a staff account (09XXXXXXXXX)
+    phoneNo: {
+      type: DataTypes.STRING(20),
+      allowNull: true
+    },
     avatar: {
       type: DataTypes.STRING,
       allowNull: true
@@ -102,6 +107,18 @@ module.exports = (sequelize, DataTypes) => { // <--- THIS IS THE REQUIRED FUNCTI
     // moment an admin force-logs-out this account stops working on its very next request,
     // everywhere it's in use, not just the live socket connection.
     forceLogoutAt: {
+      type: DataTypes.DATE,
+      allowNull: true
+    },
+    // an account that starts with a password somebody else knows (a seeded one) must choose its own at the first
+    // login: until it does, verifyToken refuses every request except changing the password
+    mustChangePassword: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false
+    },
+    // when the account last signed in
+    lastLoginAt: {
       type: DataTypes.DATE,
       allowNull: true
     },

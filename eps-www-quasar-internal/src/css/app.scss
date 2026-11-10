@@ -206,3 +206,1054 @@ body {
     // Focus ring tinted to the confirm colour instead of SweetAlert's default cornflower blue.
     --swal2-outline: 0 0 0 3px rgba(0, 78, 168, 0.35);
 }
+
+// ---------------------------------------------------------------------------
+// STANDARD MODAL (taken from the revapp apps' design layer) — a form/detail dialog is
+// `<q-dialog persistent v-model=".." class="dialog">` wrapping a q-card of:
+// header section (the hero band) -> body (`col scroll`) -> optional footer (q-card-actions).
+// Size and shell live here and nowhere else. Used by the file-new-CSM wizard
+// (CreateFeedbackComponent.vue).
+// ---------------------------------------------------------------------------
+.dialog .q-dialog__backdrop { backdrop-filter: blur(4px); }
+
+.dialog .q-dialog__inner { padding: 16px !important; }
+
+.dialog .q-dialog__inner > .q-card {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    // one modal size, the same for every modal whatever it holds: 75% of the width, 88% of the height
+    width: 75vw;
+    min-width: min(760px, 95vw);
+    max-width: 95vw;
+    height: 88vh !important;
+    max-height: 88vh;
+    overflow: hidden;
+    background: #fff;
+    border-radius: 14px !important;
+}
+
+// header: the hero band (deep EPS blue -> EPS blue gradient, white type)
+.dialog .q-dialog__inner > .q-card > .q-card__section:first-child {
+    flex: 0 0 auto;
+    padding: 20px 24px;
+    color: #fff;
+    background: linear-gradient(135deg, #00306B 0%, var(--q-primary) 100%);
+}
+.dialog .q-dialog__inner > .q-card > .q-card__section:first-child .text-h4,
+.dialog .q-dialog__inner > .q-card > .q-card__section:first-child .text-h5,
+.dialog .q-dialog__inner > .q-card > .q-card__section:first-child .text-h6,
+.dialog .q-dialog__inner > .q-card > .q-card__section:first-child .text-subtitle1,
+.dialog .q-dialog__inner > .q-card > .q-card__section:first-child .text-subtitle2,
+.dialog .q-dialog__inner > .q-card > .q-card__section:first-child .text-body1,
+.dialog .q-dialog__inner > .q-card > .q-card__section:first-child .text-body2,
+.dialog .q-dialog__inner > .q-card > .q-card__section:first-child .text-caption,
+.dialog .q-dialog__inner > .q-card > .q-card__section:first-child .text-grey,
+.dialog .q-dialog__inner > .q-card > .q-card__section:first-child .text-grey-6,
+.dialog .q-dialog__inner > .q-card > .q-card__section:first-child .text-dark,
+.dialog .q-dialog__inner > .q-card > .q-card__section:first-child .q-btn,
+.dialog .q-dialog__inner > .q-card > .q-card__section:first-child .q-icon {
+    color: #fff !important;
+}
+.dialog .q-dialog__inner > .q-card > .q-card__section:first-child .text-caption { opacity: .85; text-transform: uppercase; letter-spacing: .06em; }
+.dialog .q-dialog__inner > .q-card > .q-card__section:first-child .text-h5,
+.dialog .q-dialog__inner > .q-card > .q-card__section:first-child .text-h6 { font-size: 22px; font-weight: 700; line-height: 1.25; }
+
+// body — the one section that scrolls, header/footer stay put
+.dialog .q-dialog__inner > .q-card > .scroll {
+    flex: 1 1 0;
+    min-height: 0;
+}
+
+// footer: the primary action (next / submit) sits at the right edge
+.dialog .q-dialog__inner > .q-card > .q-card__actions {
+    flex: 0 0 auto;
+    justify-content: flex-end;
+    padding: 14px 24px;
+    border-top: 1px solid #E6ECF5;
+    box-shadow: 0 -6px 16px rgba(22, 35, 58, .04);
+}
+.dialog .q-dialog__inner > .q-card > .q-card__actions .q-btn { border-radius: 999px !important; }
+
+@media (max-width: 1000px) {
+    .dialog .q-dialog__inner > .q-card { width: 96vw; }
+}
+
+// phones: the modal is the whole screen
+@media (max-width: 599px) {
+    .dialog .q-dialog__inner { padding: 0 !important; }
+    .dialog .q-dialog__inner > .q-card { width: 100% !important; max-width: 100% !important; min-width: 0; height: 100% !important; max-height: 100% !important; border-radius: 0 !important; }
+}
+
+// white content blocks inside a modal body
+.rc-block { border: 1px solid #E6ECF5; border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; background: #fff; }
+.rc-block-title { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: #8493AC; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.rc-kv { display: grid; grid-template-columns: 150px 1fr; gap: 6px 14px; font-size: 13.5px; }
+.rc-kv > span:nth-child(odd)  { color: #8493AC; }
+.rc-kv > span:nth-child(even) { color: #16233A; font-weight: 500; word-break: break-word; }
+
+// pills in the modal's hero band (the current step lights up in the EPS yellow)
+.rc-hero-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.rc-hero-pill { padding: 2px 10px; border-radius: 10px; background: rgba(255, 255, 255, .2); font-size: 11.5px; font-weight: 600; color: #fff; text-transform: uppercase; letter-spacing: .04em; }
+.rc-hero-pill--on { background: var(--q-secondary); color: #1D1D1D; }
+
+// every radio is a choice tile: one look everywhere
+.choice-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+.choice-grid--one { grid-template-columns: 1fr; }
+.choice-grid--inline { display: flex; flex-wrap: wrap; align-items: center; }
+.choice-grid--inline > .choice-tile { width: auto; min-width: 150px; }
+.choice-tile {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px;
+    border: 1px solid #D6DEEA; border-radius: 10px; background: #fff;
+    font-size: 13px; line-height: 1.4; text-transform: uppercase; letter-spacing: .04em; color: #16233A;
+    cursor: pointer; user-select: none;
+    transition: border-color .15s, background .15s, box-shadow .15s;
+}
+.choice-tile--sm { padding: 8px 12px; font-size: 12px; }
+.choice-tile > .q-icon { font-size: 18px; color: #9AA7BA; transition: color .15s; }
+.choice-tile:hover { border-color: var(--q-primary); }
+.choice-tile.is-on,
+.choice-tile:has(.q-radio__inner--truthy) { border-color: var(--q-primary); background: rgba(0, 78, 168, .06); box-shadow: 0 0 0 1px var(--q-primary) inset; }
+.choice-tile.disabled { opacity: .6 !important; cursor: not-allowed; }
+
+// the Quasar radio wears the same tile: the dot is the 18px marker, the label sits beside it
+.q-radio.choice-tile { margin: 0 !important; position: relative; }
+.choice-tile .q-radio__inner {
+    font-size: 36px; width: 18px; min-width: 18px; height: 18px; flex: none;
+    color: #9AA7BA;
+}
+.choice-tile .q-radio__inner:before { display: none; }
+.choice-tile .q-radio__inner--truthy { color: var(--q-primary); }
+.choice-tile .q-radio__label { padding: 0; flex: 1 1 auto; min-width: 0; }
+.choice-tile .q-radio__icon { font-size: .5em; }
+.choice-tile > .no-outline { position: absolute; }
+
+
+// ---------------------------------------------------------------------------
+// PAGE PIECES (taken from the revapp apps' design layer): header, sticky header, KPI tiles,
+// tab switch, filter chips, status pills, the main + right-rail shell, and empty states.
+// Used by the Preference pages.
+// ---------------------------------------------------------------------------
+.rc-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.rc-eyebrow { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: #8493AC; margin-bottom: 2px; }
+
+// a header that stays put while the list under it scrolls: it sits on the page colour and
+// reaches up over the page padding so rows never peek above it
+.sticky-header { position: sticky; top: var(--app-hdr, 0px); z-index: 10; background: #fff; margin: -24px -24px 0; padding: 24px 24px 0; }
+
+// stat tiles
+.rc-kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.rc-kpi { width: 100%; height: 100%; min-height: 84px; padding: 14px 16px; box-sizing: border-box; display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 12px; text-align: left; }
+.rc-kpi-ico { flex: none; width: 40px; height: 40px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; background: rgba(0, 78, 168, .12); color: var(--q-primary); }
+.rc-kpi.bg-primary { background: linear-gradient(135deg, #00306B 0%, var(--q-primary) 100%) !important; }
+.rc-kpi.bg-primary .rc-kpi-ico { background: rgba(255, 255, 255, .2); color: #fff; }
+.rc-kpi-body { min-width: 0; flex: 1 1 auto; }
+.rc-kpi-value { font-size: 24px; font-weight: 700; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.rc-kpi-label { font-size: 10px; letter-spacing: .03em; text-transform: uppercase; margin-top: 3px; line-height: 1.25; overflow-wrap: anywhere; }
+
+// tab switch (a short list of sections, one on)
+.rc-tabs { display: inline-flex; flex-wrap: wrap; max-width: 100%; box-sizing: border-box; padding: 4px; background: #EEF1F6; border-radius: 12px; gap: 2px; }
+.rc-tab { padding: 7px 16px; text-align: center; flex: 1 1 auto; border-radius: 9px; font-size: 13px; font-weight: 600; color: #6B7A99; cursor: pointer; user-select: none; text-transform: capitalize; }
+.rc-tab--on { background: #fff; color: var(--q-primary); box-shadow: 0 1px 4px rgba(22, 35, 58, .12); }
+
+// pills and filter chips
+.rc-pill { font-size: 10.5px; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; padding: 2px 8px; border-radius: 100px; }
+.rc-pill--ok   { background: #E4F6EA; color: #1C6B35; }
+.rc-pill--off  { background: #F1F2F5; color: #6B7488; }
+.rc-pill--bad  { background: #FCE8E6; color: #A52E22; }
+.rc-pill--warn { background: #FFF4DB; color: #8A5B00; }
+.rc-pill--info { background: #E5EEFC; color: #2557B3; }
+.rc-chipbtn { background: #F6F9FC; color: #4C5C79; border: 1px solid #DCE4F0; padding: 0 12px; min-height: 24px; text-transform: none !important; font-size: 11px !important; font-weight: 600; letter-spacing: .01em; }
+.rc-chipbtn .q-btn__content { text-transform: none !important; }
+.rc-chipbtn--active { background: var(--q-primary); color: #fff; border-color: var(--q-primary); }
+.rc-search .q-field__control { border-radius: 100px; background: #F6F9FC; }
+
+// empty states: the icon sits in a tinted circle
+.rc-empty { padding: 56px 20px; text-align: center; color: #8493AC; background: linear-gradient(180deg, #fff 0%, #F9FBFE 100%); border: 1px dashed #D3DCEB; border-radius: 14px; }
+.rc-empty > .q-icon { box-sizing: content-box; padding: 16px; border-radius: 50%; background: rgba(0, 78, 168, .12); color: var(--q-primary) !important; margin-bottom: 4px; }
+.rc-empty-title { font-size: 16px; font-weight: 700; color: #16233A; margin-top: 8px; }
+
+// page shell: main + fixed right rail
+.rc-shell { display: grid; grid-template-columns: 1fr 380px; gap: 16px; align-items: start; }
+@media (max-width: 1200px) { .rc-shell { grid-template-columns: 1fr; } }
+.rc-main { min-width: 0; }
+.rc-rail-card { background: #fff; display: flex; flex-direction: column; max-height: 80vh; position: relative; overflow-y: auto; }
+@media (min-width: 1201px) {
+    .rc-rail-card { position: fixed; top: 0; right: 0; bottom: 0; width: 380px; z-index: 11; max-height: none; border-radius: 0 !important; border-left: 1px solid #DCE4F0; box-shadow: none !important; }
+}
+.rc-rail-head { padding: 16px; flex-shrink: 0; }
+.rc-rail-body { overflow-y: auto; flex: 1; min-height: 120px; }
+
+// a row in a rail list: status colour on the left edge
+.rc-item { padding: 10px 16px; border-bottom: 1px solid rgba(0, 0, 0, .06); border-left: 3px solid transparent; }
+.rc-item--click { cursor: pointer; }
+.rc-item:hover { background: #F6F9FC; }
+
+// ---------------------------------------------------------------------------
+// HEADER MENUS (taken from the revapp apps): the notification and message menus that open from
+// the top bar, and the list rows they share with the full notifications panel.
+// ---------------------------------------------------------------------------
+/* the dot on the bell and chat icons in the top bar: there is something new — no number */
+.app-hdr-dot { position: absolute; top: -1px; right: -1px; width: 10px; height: 10px; border-radius: 50%; background: var(--q-negative); border: 2px solid #fff; box-sizing: content-box; pointer-events: none; }
+.hm-menu { display: flex !important; flex-direction: column; border-radius: 16px !important; box-shadow: 0 14px 40px rgba(0, 48, 107, .18) !important; border: 1px solid #E6ECF6; width: 380px; max-width: calc(100vw - 16px); overflow: hidden; }
+.hm-head { display: flex; align-items: center; gap: 8px; padding: 14px 16px 6px; }
+.hm-title { font-size: 18px; font-weight: 800; color: #1E2A44; }
+.hm-link { border: 0; background: none; padding: 4px 8px; border-radius: 8px; color: var(--q-primary); font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+.hm-link:hover { background: #EAF1FF; }
+.hm-link:disabled { color: #9AA7BF; cursor: default; background: none; }
+.hm-tabs { display: flex; gap: 6px; padding: 4px 16px 8px; }
+.hm-tab { border: 0; padding: 6px 14px; border-radius: 99px; background: transparent; color: #4C5C79; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.hm-tab:hover { background: #F2F6FD; }
+.hm-tab--on { background: #E5EEFC; color: var(--q-primary); }
+.hm-search { padding: 0 16px 6px; }
+.hm-list { flex: 1 1 auto; min-height: 0; max-height: min(60vh, 460px); overflow-y: auto; padding: 0 8px 8px; }
+.hm-row { position: relative; display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px; border: 0; border-radius: 12px; background: transparent; text-align: left; font: inherit; color: #1E2A44; cursor: pointer; text-decoration: none; }
+.hm-row:hover { background: #F2F6FD; }
+.hm-row--unread { background: #EAF1FF; }
+.hm-row--unread:hover { background: #DFEAFD; }
+.hm-body { flex: 1; min-width: 0; }
+.hm-line { font-size: 13.5px; line-height: 1.35; color: #3A4A68; }
+.hm-line--clamp { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.hm-row--unread .hm-line, .hm-row--unread .hm-name { color: #1E2A44; font-weight: 700; }
+.hm-name { font-size: 14px; font-weight: 600; color: #1E2A44; text-transform: capitalize; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hm-sub { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #6B7A99; min-width: 0; }
+.hm-sub > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.hm-row--unread .hm-sub { color: var(--q-primary); font-weight: 700; }
+.hm-time { flex: none; font-size: 12px; color: #6B7A99; }
+.hm-time--new { color: var(--q-primary); font-weight: 700; }
+.hm-dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--q-primary); }
+.hm-ico { flex: none; width: 40px; height: 40px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #E5EEFC; color: var(--q-primary); }
+.hm-ico--warn { background: #FFF3DC; color: #B26A00; }
+.hm-ico--ok { background: #E3F6EA; color: #1B7A43; }
+.hm-empty { padding: 28px 16px; text-align: center; color: #8493AC; font-size: 13px; }
+.hm-empty .q-icon { display: block; margin: 0 auto 8px; font-size: 28px; color: #B3BED2; }
+.hm-foot { flex: none; border-top: 1px solid #EEF2F8; padding: 6px; }
+.hm-foot button { width: 100%; border: 0; background: none; padding: 10px; border-radius: 10px; color: var(--q-primary); font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; }
+.hm-foot button:hover { background: #F2F6FD; }
+
+// the person's picture: a photo, or the initials, with the online dot
+.pav { position: relative; flex: none; display: inline-flex; }
+.pav-face { display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--q-primary); color: #fff; font-weight: 800; overflow: hidden; }
+.pav-face img { width: 100%; height: 100%; object-fit: cover; }
+.pav-dot { position: absolute; right: -1px; bottom: -1px; width: 12px; height: 12px; border-radius: 50%; background: #21BA45; border: 2px solid #fff; }
+
+// conversations: unread is red, rows are extra small
+.hm-row--msg { gap: 10px; padding: 6px 10px; border-radius: 10px; margin-bottom: 4px; }
+.hm-row--msg .hm-name { font-size: 13px; }
+.hm-row--msg .hm-sub { font-size: 11.5px; }
+.hm-row--msg .hm-time { font-size: 11px; }
+.hm-row--msg.hm-row--unread { background: #FDECEE; }
+.hm-row--msg.hm-row--unread:hover { background: #FADDE1; }
+.hm-row--msg.hm-row--unread .hm-sub, .hm-row--msg .hm-time--new { color: var(--q-negative); font-weight: 700; }
+.hm-row--msg .hm-dot { width: 8px; height: 8px; background: var(--q-negative); }
+
+// the actions card at the top of a detail dialog: stays put while the body scrolls
+.rc-actions-wrap { position: sticky; top: -16px; z-index: 5; margin: -16px -16px 12px; padding: 16px 16px 6px; background: var(--q-accent, #F6F9FC); }
+.rc-actions { display: flex; align-items: center; gap: 8px; padding: 8px 10px 8px 14px; background: #fff; border: 1px solid #E6ECF5; border-radius: 12px; box-shadow: 0 2px 8px rgba(22, 35, 58, .05); }
+.rc-actions-cap { font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #8493AC; }
+.rc-actions-desc { margin-top: 2px; font-size: 12px; line-height: 1.35; color: #6B7A99; }
+
+// wider action buttons (the standard .btn is 125px)
+.btn-1 { width: 150px !important; }
+.btn-2 { width: 175px !important; }
+
+// a hero pill that switches the page of a detail dialog
+.rc-hero-pill--click { cursor: pointer; user-select: none; }
+
+// "where it stands": a path of dots from filed to done
+.fi-steps { display: flex; align-items: flex-start; }
+.fi-step { position: relative; flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+.fi-step::before { content: ''; position: absolute; top: 13px; left: -50%; width: 100%; height: 2px; background: #DCE4F0; }
+.fi-step:first-child::before { display: none; }
+.fi-step--done::before, .fi-step--now::before { background: var(--q-primary); }
+.fi-step--bad::before { background: var(--q-negative); }
+.fi-dot { position: relative; z-index: 1; width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #fff; border: 2px solid #DCE4F0; color: #9AA7BA; }
+.fi-step--done .fi-dot { background: var(--q-primary); border-color: var(--q-primary); color: #fff; }
+.fi-step--now .fi-dot { border-color: var(--q-primary); color: var(--q-primary); box-shadow: 0 0 0 4px rgba(0, 78, 168, .14); }
+.fi-step--bad .fi-dot { background: var(--q-negative); border-color: var(--q-negative); color: #fff; }
+.fi-lbl { font-size: 11px; font-weight: 600; color: #6B7A99; text-transform: uppercase; letter-spacing: .02em; }
+.fi-step--done .fi-lbl, .fi-step--now .fi-lbl { color: #16233A; }
+
+
+// ---------------------------------------------------------------------------
+// The feedback modal: 75% wide, a header band, a side menu and the page.
+// ---------------------------------------------------------------------------
+// (--wide is no different from the plain dialog any more: every modal is the same size, see .dialog above)
+.dialog--wide .q-dialog__inner > .q-card { width: 75vw; max-width: 95vw; }
+
+// a white pane beside a grey menu, the same shape as the employee modal of the workspace app
+.rc-split { display: flex; padding: 0 !important; overflow: hidden !important; background: #fff !important; }
+.rc-side { flex: 0 0 230px; overflow-y: auto; padding: 14px 10px; background: #F6F9FC; border-right: 1px solid #DCE4F0; display: flex; flex-direction: column; gap: 2px; }
+.rc-side-title { padding: 14px 10px 4px; font-size: 10.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #8493AC; }
+.rc-side-item {
+    display: flex; align-items: center; gap: 10px; width: 100%; padding: 7px 10px; border: 0; border-radius: 6px;
+    background: transparent; color: #4C5C79; font: inherit; font-size: 13px; text-align: left; text-transform: capitalize;
+    cursor: pointer; user-select: none;
+}
+.rc-side-item .q-icon { font-size: 16px; }
+.rc-side-item > span { flex: 1; }
+.rc-side-item > b { min-width: 20px; padding: 0 6px; border-radius: 10px; background: #E1E8F3; color: #4C5C79; font-size: 11px; font-weight: 600; text-align: center; }
+.rc-side-item:hover { background: #E9EFF8; }
+.rc-side-item--on, .rc-side-item--on:hover { background: var(--q-primary); color: #fff; }
+.rc-side-item--on > b { background: rgba(255, 255, 255, .25); color: #fff; }
+.rc-main { flex: 1 1 0; min-width: 0; overflow-y: auto; padding: 28px 32px 36px; scrollbar-width: thin; display: flex; flex-direction: column; }
+.rc-main > * { flex: 0 0 auto; }
+
+// each page opens with a title and a line about it
+.rc-head { margin: 0 0 18px; padding-bottom: 14px; border-bottom: 1px solid #E6ECF5; }
+.rc-head-t { position: relative; padding-left: 14px; font-size: 15px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #16233A; }
+.rc-head-t::before { content: ''; position: absolute; left: 0; top: 2px; bottom: 2px; width: 4px; border-radius: 4px; background: var(--q-primary); }
+.rc-head-d { margin: 4px 0 0 14px; font-size: 12.5px; color: #8493AC; }
+
+// the cards: a quiet border, and a title with a blue bar
+.rc-block { border: 1px solid #E6ECF5; border-radius: 14px; padding: 18px 20px; background: #fff; }
+.rc-block-title { font-size: 12px; font-weight: 700; letter-spacing: .06em; color: #4C5C79; margin-bottom: 10px; }
+.rc-block-title::before { content: ''; flex: none; width: 4px; height: 14px; border-radius: 2px; background: var(--q-primary); }
+
+// the facts: a tinted icon, a small label, the value
+.rc-facts { display: flex; flex-direction: column; }
+.rc-fact { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-top: 1px solid #F0F3F8; }
+.rc-fact:first-child { border-top: 0; padding-top: 2px; }
+.rc-fact-text { display: flex; flex-direction: column; min-width: 0; }
+.rc-fact-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: #8493AC; }
+.rc-fact-value { font-size: 13.5px; font-weight: 600; color: #16233A; word-break: break-word; }
+.rc-ico { flex: none; width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+.rc-ico--red { background: #FBEAEA; color: #900201; }
+.rc-ico--teal { background: #E2F4F1; color: #1E7F78; }
+.rc-ico--blue { background: #E5EEFC; color: #2557B3; }
+.rc-ico--amber { background: #FFF1D6; color: #B7791F; }
+.rc-ico--purple { background: #EFE8FA; color: #6B3FA0; }
+
+// overview: the facts in columns under "where it stands"
+.rc-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; align-items: start; }
+.rc-cols > .rc-block { margin-bottom: 0; }
+.rc-col { min-width: 0; }
+.rc-col > .rc-block { margin-bottom: 16px; }
+.rc-col > .rc-block:last-child { margin-bottom: 0; }
+
+.rc-count { margin-left: auto; padding: 1px 8px; border-radius: 10px; background: #E6ECF5; color: #3B4A66; font-size: 11px; letter-spacing: 0; }
+
+// the conversation: the thread on the left, the reply box (and the resolution time) on the right
+.rc-page { display: block; }
+
+// the manage page: assignment on the left, resolution time and status on the right
+
+// responses read as messages
+.rc-thread { display: flex; flex-direction: column; gap: 10px; }
+.rc-thread > .q-item { border: 1px solid #E6ECF5; border-radius: 14px; background: #F8FAFD; padding: 12px 14px; }
+.rc-thread > .q-item + .q-item { border-top: 1px solid #E6ECF5; }
+
+// the activity page: the timeline beside a short summary
+.rc-cols--act { grid-template-columns: minmax(0, 1fr) 320px; }
+
+// the modal is 75% of the window, so the two-column pages fold into one before they get cramped
+@media (max-width: 1320px) {
+    .rc-cols--act, .rc-cols--results { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 1200px) {
+}
+
+// the poll's results sit in a wide column beside the facts
+.rc-cols--results { grid-template-columns: minmax(0, 1fr) 320px; }
+// the discussion thread is not a scrolling box inside the page any more
+.rc-page--responses .dp-comment-list { max-height: none !important; overflow: visible !important; }
+
+@media (max-width: 800px) {
+    .rc-split { flex-direction: column; overflow-y: auto !important; }
+    .rc-side { flex: 0 0 auto; flex-direction: row; flex-wrap: wrap; border-right: 0; border-bottom: 1px solid #DCE4F0; }
+    .rc-side-title { display: none; }
+    .rc-side-item { width: auto; white-space: nowrap; }
+    .rc-main { overflow: visible; padding: 18px 16px 24px; }
+}
+
+// ---------------------------------------------------------------------------
+// The forms of the modals, in the style of the workspace app: a small caption over each field,
+// quiet outlined inputs, and the buttons in a bar that stays at the bottom.
+// ---------------------------------------------------------------------------
+.rc-cap { margin-bottom: 6px; font-size: 10.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #8493AC; }
+.rc-main .q-field--outlined .q-field__control { border-radius: 8px; background: #fff; }
+.rc-main .q-field--outlined .q-field__control:before { border-color: #DCE4F0; }
+.rc-main .q-field--outlined:hover .q-field__control:before { border-color: #B8C4D9; }
+.rc-main .q-field--outlined.q-field--focused .q-field__control:after { border-width: 2px; }
+.rc-form .q-field--float .q-field__label { display: none; }
+
+.rc-form { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 14px 18px; align-items: start; }
+.rc-form--one { grid-template-columns: minmax(0, 1fr); }
+.rc-form-bar { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; }
+.rc-send { min-height: 40px; padding: 0 22px; border-radius: 8px; font-weight: 600; }
+@media (max-width: 1100px) { .rc-form { grid-template-columns: minmax(0, 1fr); } }
+
+
+// nothing here yet
+.rc-empty { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 44px 24px; border: 2px dashed #DCE4F0; border-radius: 12px; background: #F6F9FC; color: #8493AC; text-align: center; }
+.rc-empty-t { font-size: 15px; font-weight: 700; color: #16233A; }
+.rc-empty-d { max-width: 360px; font-size: 13px; }
+
+// ---------------------------------------------------------------------------
+// The conversation, quieter: no box around the thread, a single chat-style box to write in.
+// ---------------------------------------------------------------------------
+.rc-main .rc-actions-wrap { position: static; margin: 0 0 16px; padding: 0; background: transparent; }
+.rc-main .rc-actions { box-shadow: none; border-radius: 12px; }
+
+
+.rc-composer { border: 1px solid #DCE4F0; border-radius: 12px; background: #fff; transition: border-color .15s, box-shadow .15s; }
+.rc-composer:focus-within { border-color: var(--q-primary); box-shadow: 0 0 0 3px rgba(0, 78, 168, .1); }
+.rc-composer .q-field__control { height: auto; }
+.rc-composer .q-field__native { padding: 14px 16px 8px !important; }
+.rc-composer-files { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 14px 8px; }
+.rc-composer-bar { display: flex; align-items: center; gap: 8px; padding: 8px 10px 10px 12px; border-top: 1px solid #F0F3F8; }
+.rc-send { min-height: 36px; padding: 0 18px; border-radius: 8px; font-weight: 600; }
+
+
+// ---------------------------------------------------------------------------
+// The manage page as steps: pick what to do, then fill in the details (the same shape as the
+// employment-change wizard of the workspace app).
+// ---------------------------------------------------------------------------
+.wz-steps { display: flex; gap: 8px; margin-bottom: 8px; }
+.wz-step { display: flex; align-items: center; gap: 8px; padding: 6px 14px 6px 8px; border-radius: 100px; background: #F6F9FC; color: #8493AC; font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+.wz-step-dot { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: #DCE4F0; color: #4C5C79; font-size: 11px; }
+.wz-step--active { background: #E5EEFC; color: var(--q-primary); }
+.wz-step--active .wz-step-dot { background: var(--q-primary); color: #fff; }
+.wz-step--done .wz-step-dot { background: #1C8A3B; color: #fff; }
+.wz-title { margin-bottom: 4px; font-size: 17px; font-weight: 700; color: #16233A; }
+.wz-sub { margin-bottom: 14px; font-size: 13px; color: #8493AC; }
+.wz-types { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.wz-type { display: flex; align-items: center; gap: 14px; padding: 16px; border: 1px solid #E6ECF5; border-radius: 12px; background: #fff; cursor: pointer; transition: border-color .15s, background .15s, transform .15s; }
+.wz-type:hover { border-color: var(--q-primary); background: #F2F7FF; transform: translateY(-1px); }
+.wz-type--disabled { opacity: .5; cursor: not-allowed; }
+.wz-type--disabled:hover { border-color: #E6ECF5; background: #fff; transform: none; }
+.wz-type-icon { display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 10px; flex: 0 0 auto; }
+.wz-type-title { font-size: 14px; font-weight: 700; color: #16233A; }
+.wz-type-hint { font-size: 12px; color: #8493AC; }
+.wz-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 100px; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.wz-current { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px 24px; margin: 6px 0 4px; padding: 14px 18px; border: 1px solid #DCE4F0; border-radius: 10px; background: #F6F9FC; font-size: 13px; font-weight: 500; color: #16233A; }
+.wz-current span { display: block; font-size: 10.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #8493AC; }
+.wz-current .wz-cur-v { font-size: 13px; font-weight: 500; letter-spacing: 0; text-transform: none; color: #16233A; }
+.wz-current .wz-cur-v.text-uppercase { text-transform: uppercase; }
+.wz-bar { display: flex; justify-content: flex-start; padding-top: 4px; }
+
+// an office's code, as a small tag at the front of its pill
+.rc-code { display: inline-block; padding: 0 7px; border-radius: 6px; background: #E5EEFC; color: #1F4E96; font-size: 11px; font-weight: 700; letter-spacing: .04em; line-height: 18px; }
+.rc-code--solid { background: var(--q-primary); color: #fff; }
+.cp-chip--active .rc-code { background: rgba(255, 255, 255, .25); color: #fff; }
+
+// the "handled by" strip: the code tags stay small tags, not blocks
+.wz-current .rc-code { display: inline-block; font-size: 11px; letter-spacing: .04em; text-transform: none; color: #fff; }
+.wz-current .rc-code:not(.rc-code--solid) { color: #1F4E96; }
+
+// assigning offices: the codes on the left, what was chosen (and why) on the right
+.rc-assign { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 24px; align-items: start; }
+.rc-assign-sub { font-size: 12.5px; color: #8493AC; }
+.rc-codes { display: flex; flex-wrap: wrap; gap: 8px; }
+.rc-codepill {
+    display: inline-flex; align-items: center; gap: 6px; min-width: 64px; justify-content: center; padding: 7px 14px;
+    border: 1px solid #DCE4F0; border-radius: 999px; background: #fff; color: #3B4A66; font: inherit; font-size: 12.5px; font-weight: 700;
+    letter-spacing: .04em; cursor: pointer; transition: background .15s, border-color .15s, color .15s;
+}
+.rc-codepill:hover { border-color: var(--q-primary); background: #F2F7FF; }
+.rc-codepill--on, .rc-codepill--on:hover { border-color: var(--q-primary); background: var(--q-primary); color: #fff; }
+.rc-codepill-ai { color: #E0A400; }
+.rc-codepill--on .rc-codepill-ai { color: #FFD43A; }
+.rc-assign-side { padding: 16px; border: 1px solid #E6ECF5; border-radius: 12px; background: #F9FBFE; }
+.rc-assign-none { padding: 14px 0 4px; font-size: 12.5px; color: #8493AC; }
+.rc-sel { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-top: 1px solid #EAF0F8; }
+.rc-sel:first-of-type { border-top: 0; }
+.rc-sel .rc-code { margin-top: 1px; }
+.rc-sel-name { font-size: 13px; font-weight: 600; color: #16233A; }
+.rc-sel-why { margin-top: 2px; font-size: 12px; color: #6B7A99; }
+.rc-assign-bar { display: flex; justify-content: flex-end; margin-top: 14px; }
+@media (max-width: 1100px) { .rc-assign { grid-template-columns: minmax(0, 1fr); } }
+
+// ---------------------------------------------------------------------------
+// A page with its facts on the left and the form that acts on them in a panel on the right, which
+// stays in view while the left side scrolls (the conversation, and every step of "manage").
+// ---------------------------------------------------------------------------
+.rc-page--responses, .rc-page--manage { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px 24px; align-items: start; }
+.rc-pg-head { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 4px; }
+.rc-pg-main { grid-column: 1; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+.rc-pg-main > .rc-block { margin-bottom: 0; }
+.rc-pg-main > .rc-m-thread { border: 0; padding: 0; background: transparent; }
+.rc-pg-side { grid-column: 2; position: sticky; top: 0; display: flex; flex-direction: column; gap: 14px; max-height: calc(88vh - 190px); overflow-y: auto; scrollbar-width: thin; }
+.rc-pg-side:not(:has(*)) { display: none; }
+.rc-panel { padding: 16px; border: 1px solid #E6ECF5; border-radius: 12px; background: #F9FBFE; }
+.rc-panel > .rc-block-title { margin-bottom: 12px; }
+.rc-panel .rc-assign-side { padding: 0; border: 0; background: transparent; }
+.rc-pg-side .rc-composer textarea { min-height: 120px; }
+.rc-pg-side .response-list-scroll { max-height: none; }
+.rc-pg-main .response-list-scroll { max-height: none; overflow: visible; }
+@media (max-width: 1100px) {
+    .rc-page--responses, .rc-page--manage { grid-template-columns: minmax(0, 1fr); }
+    .rc-pg-main, .rc-pg-side { grid-column: 1; }
+    .rc-pg-side { position: static; max-height: none; overflow: visible; order: -1; }
+}
+
+// nothing here yet: the same dashed card, tinted icon and title as the workspace app
+.rc-empty { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 48px 24px; border: 2px dashed #DCE4F0; border-radius: 12px; background: linear-gradient(180deg, #FFFFFF 0%, #F9FBFE 100%); color: #8493AC; text-align: center; }
+.rc-empty > .q-icon { box-sizing: content-box; padding: 16px; border-radius: 50%; background: #E5EEFC; color: var(--q-primary) !important; margin-bottom: 4px; }
+.rc-empty-t { font-size: 15px; font-weight: 700; color: #16233A; }
+.rc-empty-d { max-width: 360px; font-size: 13px; }
+
+// the photos of a feedback
+.rc-photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.rc-photo { position: relative; padding: 0; border: 1px solid #E6ECF5; border-radius: 12px; overflow: hidden; background: #F6F9FC; aspect-ratio: 4 / 3; cursor: zoom-in; transition: transform .15s, box-shadow .15s; }
+.rc-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.rc-photo:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -12px rgba(20, 40, 90, .5); }
+.rc-photo-zoom { position: absolute; right: 8px; bottom: 8px; width: 26px; height: 26px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: rgba(22, 35, 58, .65); color: #fff; opacity: 0; transition: opacity .15s; }
+.rc-photo:hover .rc-photo-zoom { opacity: 1; }
+.rc-hero-pill--code { font-weight: 700; }
+
+// the offices chosen: a pill each (the code, a cross to take it out, the name on hover)
+.rc-chosen { display: flex; flex-wrap: wrap; gap: 8px; margin: 2px 0 10px; }
+.rc-chip-sel { display: inline-flex; align-items: center; gap: 6px; padding: 5px 6px 5px 12px; border-radius: 999px; background: var(--q-primary); color: #fff; font-size: 12.5px; font-weight: 700; letter-spacing: .04em; }
+.rc-chip-ai { color: #FFD43A; }
+.rc-chip-x { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; padding: 0; border: 0; border-radius: 50%; background: rgba(255, 255, 255, .22); color: #fff; cursor: pointer; transition: background .15s; }
+.rc-chip-x:hover { background: rgba(255, 255, 255, .4); }
+.rc-why { display: flex; align-items: flex-start; gap: 8px; padding: 7px 0; border-top: 1px solid #EAF0F8; font-size: 12px; color: #6B7A99; }
+.rc-why .rc-code { flex: none; margin-top: 1px; }
+
+// "change what to do" sits next to the badge at the top, and the finished TYPE step takes you back too
+.wz-title--row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.wz-step--click { cursor: pointer; }
+.wz-step--click:hover { background: #E8EFFA; }
+
+// ---------------------------------------------------------------------------
+// A page with a form or actions keeps them in a rail down the right edge of the modal: full height,
+// its own scroll, and it does not move when the facts on the left are scrolled.
+// ---------------------------------------------------------------------------
+.rc-main:has(.rc-pg-side) { display: flex; flex-direction: column; padding: 0; overflow: hidden; }
+// the Receive strip is not needed here: the rail has its own Receive button
+.rc-main:has(.rc-pg-side) > .rc-actions-wrap { display: none; }
+.rc-main:has(.rc-pg-side) > .rc-page { flex: 1 1 0; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 360px; grid-template-rows: auto minmax(0, 1fr); gap: 0; align-items: stretch; }
+.rc-main:has(.rc-pg-side) .rc-pg-head { grid-column: 1; grid-row: 1; padding: 24px 32px 8px; }
+.rc-main:has(.rc-pg-side) .rc-pg-main { grid-column: 1; grid-row: 2; min-height: 0; overflow-y: auto; padding: 20px 32px 32px; scrollbar-width: thin; }
+.rc-main:has(.rc-pg-side) .rc-pg-side {
+    grid-column: 2; grid-row: 1 / -1; position: static; max-height: none; overflow-y: auto; scrollbar-width: thin;
+    padding: 24px 22px 28px; gap: 18px; background: #F9FBFE; border-left: 1px solid #DCE4F0;
+}
+.rc-main:has(.rc-pg-side) .rc-panel { padding: 0; border: 0; background: transparent; }
+.rc-main:has(.rc-pg-side) .rc-panel + .rc-panel { padding-top: 18px; border-top: 1px solid #E3EAF4; }
+@media (max-width: 1100px) {
+    .rc-main:has(.rc-pg-side) { display: block; padding: 18px 16px 24px; overflow-y: auto; }
+    .rc-main:has(.rc-pg-side) > .rc-page { display: flex; flex-direction: column; gap: 16px; }
+    .rc-main:has(.rc-pg-side) .rc-pg-head, .rc-main:has(.rc-pg-side) .rc-pg-main { padding: 0; overflow: visible; }
+    .rc-main:has(.rc-pg-side) .rc-pg-side { order: -1; overflow: visible; padding: 16px; border: 1px solid #E6ECF5; border-radius: 12px; }
+}
+
+// ---------------------------------------------------------------------------
+// The reply form in the rail: the text takes all the room left, the evidence is dropped in a box
+// under it (the same drop box as the workspace app's documents), and send is the last thing.
+// ---------------------------------------------------------------------------
+.rc-pg-side > .rc-m-compose { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.rc-reply { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 16px; }
+.rc-reply-grow { flex: 1 1 auto; min-height: 140px; display: flex; flex-direction: column; }
+.rc-reply-text { flex: 1 1 auto; display: flex; }
+.rc-reply-text .q-field__inner, .rc-reply-text .q-field__control { height: 100%; }
+.rc-reply-text .q-field__control { align-items: stretch; }
+.rc-reply-text textarea { height: 100% !important; min-height: 120px; resize: none; padding: 12px 14px; }
+.rc-reply-done { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.rc-reply-send { width: 100%; min-height: 44px; font-size: 14px; }
+
+.rc-drop { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 20px 16px; border: 2px dashed #C9D4E5; border-radius: 12px; background: #F6F9FC; color: #8493AC; text-align: center; cursor: pointer; transition: background .15s, border-color .15s, color .15s; }
+.rc-drop:hover, .rc-drop--over { border-color: var(--q-primary); background: #E5EEFC; color: var(--q-primary); }
+.rc-drop-title { font-size: 13.5px; font-weight: 700; color: #16233A; }
+.rc-drop-sub { font-size: 12.5px; }
+.rc-drop-link { color: var(--q-primary); font-weight: 600; text-decoration: underline; }
+.rc-files { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.rc-file { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid #E6ECF5; border-radius: 10px; background: #fff; }
+.rc-file-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 600; color: #16233A; }
+.rc-file-size { font-size: 11.5px; color: #8493AC; }
+
+// ---------------------------------------------------------------------------
+// The overview: the numbers across the top, the details and photos on the left, and on the right where
+// it stands, the facts, and who handles it.
+// ---------------------------------------------------------------------------
+.rc-ov { display: grid; gap: 16px; align-items: start; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "sum sum sum" "det stand stand" "det glance handled"; }
+.rc-ov > .rc-block, .rc-ov-det > .rc-block { margin-bottom: 0; }
+.rc-ov-sum { grid-area: sum; }
+.rc-ov-det { grid-area: det; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.rc-ov-stand { grid-area: stand; }
+.rc-ov-glance { grid-area: glance; }
+.rc-ov-handled { grid-area: handled; }
+@media (max-width: 1400px) {
+    .rc-ov { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "sum sum" "stand stand" "det glance" "det handled"; }
+}
+@media (max-width: 960px) {
+    .rc-ov { grid-template-columns: minmax(0, 1fr); grid-template-areas: "sum" "stand" "det" "glance" "handled"; }
+}
+
+.rc-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(138px, 1fr)); gap: 10px 12px; }
+.rc-tile { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #EDF1F8; border-radius: 12px; background: #F9FBFE; min-width: 0; }
+.rc-tile-text { display: flex; flex-direction: column; min-width: 0; }
+.rc-tile-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: #8493AC; }
+.rc-tile-value { font-size: 15px; font-weight: 700; color: #16233A; line-height: 1.2; }
+.rc-tile-sub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11.5px; color: #8493AC; }
+.rc-tile--warn { border-color: #F2D4A8; background: #FFFBF3; }
+.rc-tile--warn .rc-tile-value { color: #B7791F; }
+
+// the form panels of "manage": the text field takes the room that is left, the submit button is the last thing
+.rc-panel--fill { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.rc-panel--fill > .rc-reply { flex: 1 1 auto; }
+
+// the action you chose, as a card: a flat arrow back, the icon, what it is
+.wz-action { display: flex; align-items: center; gap: 12px; padding: 12px 16px 12px 8px; border: 1px solid #E6ECF5; border-radius: 12px; background: #fff; }
+.wz-action-back { flex: 0 0 auto; }
+
+// the offices handling it: the code, where it stands, and why the office was chosen
+.rc-offs { display: flex; flex-direction: column; gap: 10px; }
+.rc-off { padding: 12px 14px; border: 1px solid #E6ECF5; border-radius: 12px; background: #F9FBFE; }
+.rc-off--off { opacity: .6; }
+.rc-off-top { display: flex; align-items: center; gap: 8px; }
+.rc-off-code { font-size: 12.5px; line-height: 22px; padding: 0 10px; border-radius: 8px; }
+.rc-off-flag { font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #8493AC; }
+.rc-off-why { display: flex; align-items: flex-start; gap: 6px; margin-top: 8px; font-size: 12px; line-height: 1.45; color: #6B7A99; }
+.rc-off-why .q-icon { margin-top: 2px; color: #8493AC; }
+.rc-empty--sm { padding: 28px 16px; }
+.rc-empty--sm > .q-icon { padding: 12px; }
+
+// ---------------------------------------------------------------------------
+// The chosen action as a card, the checklist before completing, what cancelling / reopening does, and the
+// messages that stop a submit.
+// ---------------------------------------------------------------------------
+.wz-action { position: relative; display: flex; align-items: center; gap: 14px; padding: 16px 18px 16px 14px; border: 1px solid #E6ECF5; border-left: 5px solid var(--wz-fg, #204888); border-radius: 14px; background: linear-gradient(90deg, var(--wz-bg, #EEF3FB) 0%, #fff 62%); box-shadow: 0 6px 18px -14px rgba(22, 35, 58, .5); }
+.wz-action-back { flex: 0 0 auto; box-shadow: 0 1px 4px rgba(22, 35, 58, .18); border: 1px solid #E6ECF5; }
+.wz-action-icon { flex: 0 0 auto; width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; background: #fff; color: var(--wz-fg, #204888); box-shadow: 0 2px 8px rgba(22, 35, 58, .12); }
+.wz-action-eyebrow { font-size: 10.5px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--wz-fg, #204888); opacity: .85; }
+.wz-action-title { font-size: 18px; font-weight: 800; line-height: 1.2; color: #16233A; }
+.wz-action-hint { margin-top: 2px; font-size: 12.5px; color: #6B7A99; }
+.wz-action-now { flex: 0 0 auto; align-self: flex-start; padding: 3px 10px; border-radius: 999px; background: #fff; border: 1px solid #E6ECF5; font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #6B7A99; }
+
+.rc-checks { display: flex; flex-direction: column; gap: 10px; }
+.rc-check { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border: 1px solid #E6ECF5; border-radius: 12px; background: #fff; }
+.rc-check > .q-icon { margin-top: 1px; }
+.rc-check-t { font-size: 13.5px; font-weight: 700; color: #16233A; }
+.rc-check-d { margin-top: 1px; font-size: 12.5px; color: #6B7A99; }
+.rc-check-codes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.rc-check-tag { flex: 0 0 auto; padding: 2px 9px; border-radius: 999px; font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.rc-check--ok > .q-icon { color: #1C8A3B; }
+.rc-check--ok .rc-check-tag { background: #E4F6EA; color: #1C8A3B; }
+.rc-check--bad { border-color: #F3CFD2; background: #FFF8F8; }
+.rc-check--bad > .q-icon { color: #C0392B; }
+.rc-check--bad .rc-check-tag { background: #FBE6E8; color: #B3121F; }
+.rc-check--warn > .q-icon { color: #D99100; }
+.rc-check--warn .rc-check-tag { background: #FFF1D6; color: #9A6B00; }
+.rc-code--bad { background: #FBE6E8; color: #B3121F; }
+.rc-ai { margin-top: 16px; padding-top: 14px; border-top: 1px solid #EAF0F8; }
+
+.rc-effects { display: flex; flex-direction: column; gap: 10px; }
+.rc-effect { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border: 1px solid #E6ECF5; border-radius: 12px; background: #fff; }
+.rc-effect b { display: block; font-size: 13.5px; color: #16233A; }
+.rc-effect span:not(.rc-ico) { display: block; margin-top: 1px; font-size: 12.5px; color: #6B7A99; }
+.rc-effect--bad { border-color: #F3CFD2; background: #FFF8F8; }
+
+.rc-field-foot { display: flex; justify-content: space-between; margin-top: 6px; font-size: 11.5px; color: #8493AC; }
+.rc-field-foot--bad { color: #C0392B; font-weight: 600; }
+.rc-problems { padding: 10px 12px; border: 1px solid #F3CFD2; border-radius: 10px; background: #FFF8F8; font-size: 12.5px; color: #B3121F; display: flex; flex-direction: column; gap: 4px; }
+.rc-confirm { font-size: 13px; color: #16233A; }
+
+// edit details: what is on file now, and how long it can still be changed
+.rc-fact--top { align-items: flex-start; }
+.rc-fact-value--wrap { font-weight: 500; line-height: 1.5; white-space: pre-wrap; }
+.rc-open-note { display: flex; align-items: flex-start; gap: 14px; border-color: #CFE7D6; background: #F4FBF6; }
+.rc-open-ico { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: #E4F6EA; color: #1C8A3B; }
+.rc-open-t { font-size: 14px; font-weight: 700; color: #16233A; }
+.rc-open-d { margin-top: 2px; font-size: 12.5px; color: #6B7A99; }
+
+// the way back stays fixed at the foot of the left side while its content scrolls
+.rc-main:has(.rc-pg-side) > .rc-page { grid-template-rows: auto minmax(0, 1fr) auto; }
+.rc-main:has(.rc-pg-side) .rc-pg-foot { grid-column: 1; grid-row: 3; padding: 12px 32px; border-top: 1px solid #E6ECF5; background: #fff; display: flex; align-items: center; }
+@media (max-width: 1100px) { .rc-main:has(.rc-pg-side) .rc-pg-foot { padding: 0; border: 0; } }
+.wz-action { padding-left: 18px; }
+
+// ---------------------------------------------------------------------------
+// The resolution time: how long is left, the path of the deadline, and whether it can still be extended.
+// ---------------------------------------------------------------------------
+.rc-clock { padding: 16px 18px; border: 1px solid #E6ECF5; border-radius: 12px; background: #F9FBFE; }
+.rc-clock-big { font-size: 30px; font-weight: 800; line-height: 1.1; color: #16233A; }
+.rc-clock-big small { margin-left: 8px; font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #8493AC; }
+.rc-clock-sub { margin-top: 4px; font-size: 12.5px; color: #6B7A99; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.rc-clock-flag { padding: 1px 9px; border-radius: 999px; background: #FFF1D6; color: #9A6B00; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.rc-bar { height: 8px; margin-top: 12px; border-radius: 8px; background: #E3EAF4; overflow: hidden; }
+.rc-bar > span { display: block; height: 100%; border-radius: 8px; background: linear-gradient(90deg, #3E78D6, var(--q-primary)); }
+.rc-clock--late { border-color: #F3CFD2; background: #FFF8F8; }
+.rc-clock--late .rc-clock-big { color: #B3121F; }
+.rc-clock--late .rc-bar > span { background: #C0392B; }
+
+.rc-track { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 18px 0 6px; }
+.rc-stop { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; padding: 0 4px; }
+.rc-stop::before { content: ''; position: absolute; top: 13px; left: -50%; width: 100%; height: 2px; background: #DCE4F0; }
+.rc-stop:first-child::before { display: none; }
+.rc-stop--past::before { background: var(--q-primary); }
+.rc-stop-dot { position: relative; z-index: 1; width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #fff; border: 2px solid #DCE4F0; color: #9AA7BA; }
+.rc-stop--past .rc-stop-dot { background: var(--q-primary); border-color: var(--q-primary); color: #fff; }
+.rc-stop--opt .rc-stop-dot { border-style: dashed; }
+.rc-stop-l { margin-top: 6px; font-size: 11px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; color: #3B4A66; }
+.rc-stop-d { font-size: 11.5px; color: #8493AC; }
+.rc-checks--tight { margin-top: 16px; gap: 8px; }
+
+// every button of the three modals reads Capitalized
+.dialog--wide .q-btn, .dialog--wide .q-btn .block { text-transform: capitalize !important; }
+
+// the overview as two columns that each take their own height: the details on the left; on the right where it
+// stands, and under it the facts beside who handles it
+.rc-ov { grid-template-columns: minmax(0, 1.25fr) minmax(0, 2fr); grid-template-areas: "sum sum" "det right"; }
+.rc-ov-right { grid-area: right; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.rc-ov-right > .rc-block { margin-bottom: 0; }
+.rc-ov-pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.rc-ov-pair > .rc-block { margin-bottom: 0; }
+@media (max-width: 1400px) {
+    .rc-ov { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "sum sum" "det right"; }
+    .rc-ov-pair { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 960px) {
+    .rc-ov { grid-template-columns: minmax(0, 1fr); grid-template-areas: "sum" "right" "det"; }
+}
+// inside the pair the two cards just sit side by side (they must not keep the old grid-area names)
+.rc-ov-pair > .rc-ov-glance, .rc-ov-pair > .rc-ov-handled, .rc-ov-right > .rc-ov-stand { grid-area: auto; }
+
+// the filing / editing dialog: the arrows to the next and previous page sit at the two ends of the foot
+.rc-page--form .rc-pg-foot { justify-content: space-between; }
+.rc-cap--bad { color: #C0392B; }
+
+// two panels in one rail (a workstation can reply and also ask for more time): neither is squeezed, the
+// rail scrolls instead; a single panel still takes the whole height
+.rc-main:has(.rc-pg-side) .rc-panel--fill, .rc-pg-side > .rc-m-compose { flex: 1 0 auto; min-height: auto; }
+.rc-reply, .rc-panel--fill > .rc-reply { flex: 1 0 auto; min-height: auto; }
+.rc-panel + .rc-panel .rc-reply-grow { min-height: 110px; }
+.rc-panel + .rc-panel .rc-reply-text textarea { min-height: 80px; }
+
+// the note an office sees once it handed the feedback over
+.rc-cut-note { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 16px; border-color: #F2D4A8; background: #FFFBF3; }
+.rc-cut-note .rc-open-ico { background: #FFF1D6; color: #9A6B00; }
+
+// a step that is not open yet: dimmed, with a small lock
+.rc-side-foot { margin-top: auto; padding: 12px 0 4px; border-top: 1px solid #DCE4F0; }
+.pd-stop { border: 1px dashed #B8C4D9; background: #fff; color: #4C5C79; }
+.pd-stop:hover { border-color: var(--q-primary); background: #F2F7FF; color: var(--q-primary); }
+.rc-side-item--locked, .rc-side-item--locked:hover { opacity: .55; cursor: not-allowed; background: transparent; }
+.cc-foot-hint { display: inline-flex; align-items: center; gap: 6px; margin: 0 auto 0 14px; font-size: 12px; color: #8493AC; }
+
+// ---- operations overview, shared by the Feedback Desk and the CSM report page
+/* ---- operations overview (needs attention / how it is going / the process) ---- */
+.ov-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: #8493AC;
+    margin: 0 2px 8px;
+}
+.ov-attn-grid {
+    /* wrap and stretch: a last row with fewer tiles fills the width instead of leaving a gap */
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.ov-attn-grid > * { flex: 1 1 160px; min-width: 0; }
+.ov-attn {
+    position: relative;
+    padding: 12px 14px 12px 16px;
+    background: #FFFFFF;
+    border: 1px solid #E3EAF4;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+.ov-attn::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: #DCE4F0;
+}
+.ov-attn--click { cursor: pointer; }
+.ov-attn--click:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(32, 72, 136, .10); }
+.ov-attn-ico { position: absolute; top: 12px; right: 12px; color: #B8C2D4; }
+.ov-attn-value { font-size: 28px; font-weight: 700; line-height: 1.1; color: #16233A; font-variant-numeric: tabular-nums; }
+.ov-attn-label { font-size: 12px; font-weight: 600; color: #16233A; margin-top: 4px; }
+.ov-attn-sub { font-size: 11px; color: #8493AC; margin-top: 1px; }
+.ov-attn--bad::before { background: #C10015; }
+.ov-attn--bad .ov-attn-value, .ov-attn--bad .ov-attn-ico { color: #C10015; }
+.ov-attn--warn::before { background: #FFC900; }
+.ov-attn--warn .ov-attn-value, .ov-attn--warn .ov-attn-ico { color: #9A6B00; }
+.ov-attn--info::before { background: #204888; }
+.ov-attn--info .ov-attn-value, .ov-attn--info .ov-attn-ico { color: #204888; }
+.ov-attn--zero .ov-attn-value { color: #B8C2D4; }
+.ov-attn--on { background: #C10015; border-color: #C10015; }
+.ov-attn--on .ov-attn-value, .ov-attn--on .ov-attn-label, .ov-attn--on .ov-attn-sub, .ov-attn--on .ov-attn-ico { color: #FFFFFF; }
+.ov-attn--on::before { background: #FFC900; }
+
+.ov-kpi-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.ov-kpi-grid > * { flex: 1 1 170px; min-width: 0; }
+.ov-kpi {
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: #204888;
+    color: #FFFFFF;
+    min-width: 0;
+}
+.ov-kpi-head { display: flex; align-items: center; gap: 6px; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; color: rgba(255, 255, 255, .78); }
+.ov-kpi-value { font-size: 28px; font-weight: 700; line-height: 1.15; margin-top: 6px; font-variant-numeric: tabular-nums; }
+.ov-kpi-sub { font-size: 11px; color: rgba(255, 255, 255, .72); margin-top: 4px; }
+.ov-trend {
+    display: inline-flex;
+    align-items: center;
+    font-size: 10.5px;
+    font-weight: 600;
+    margin-top: 4px;
+    padding: 1px 8px 1px 2px;
+    border-radius: 100px;
+    background: rgba(255, 255, 255, .16);
+}
+.ov-trend--up { color: #B6F5C6; }
+.ov-trend--down { color: #FFC9CE; }
+.ov-trend + .ov-kpi-sub { margin-top: 6px; }
+
+.ov-duo { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+.ov-trio { display: flex; flex-wrap: wrap; gap: 12px; }
+.ov-trio > * { flex: 1 1 250px; min-width: 0; }
+.ov-card { background: #FFFFFF; border: 1px solid #E3EAF4; border-radius: 12px; padding: 16px 18px; min-width: 0; }
+.ov-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.ov-card-title { font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #16233A; }
+.ov-card-note { font-size: 11px; color: #8493AC; }
+.ov-card-foot { margin-top: 12px; padding-top: 10px; border-top: 1px dashed #E3EAF4; font-size: 11px; line-height: 1.5; color: #8493AC; }
+.ov-empty { padding: 36px 0; text-align: center; font-size: 12px; color: #8493AC; border: 1px dashed #DCE4F0; border-radius: 10px; }
+
+.ov-step { margin-bottom: 11px; }
+.ov-step-top { display: flex; align-items: center; gap: 8px; font-size: 12px; margin-bottom: 4px; }
+.ov-step-n { width: 18px; height: 18px; border-radius: 50%; background: #F1F5FB; color: #204888; font-size: 10px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ov-step-label { flex: 1; color: #16233A; }
+.ov-step-count { font-weight: 700; color: #16233A; font-variant-numeric: tabular-nums; }
+.ov-step-pct { width: 38px; text-align: right; color: #8493AC; font-size: 11px; font-variant-numeric: tabular-nums; }
+
+.ov-meter-row { margin-bottom: 16px; }
+.ov-meter-row:last-child { margin-bottom: 0; }
+.ov-meter-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-size: 12px; margin-bottom: 5px; color: #16233A; }
+.ov-meter-top i { color: #8493AC; font-style: normal; }
+.ov-meter-sub { font-size: 11px; color: #8493AC; margin-top: 5px; }
+
+.ov-facts { display: flex; flex-direction: column; gap: 8px; }
+.ov-fact { display: flex; align-items: center; gap: 12px; padding: 8px 12px; background: #F6F9FC; border-radius: 10px; }
+.ov-fact-n { min-width: 34px; font-size: 20px; font-weight: 700; color: #204888; font-variant-numeric: tabular-nums; }
+.ov-fact-l { font-size: 12px; color: #4C5C79; line-height: 1.3; }
+
+.cp-meter {
+    height: 7px;
+    border-radius: 4px;
+    background: #EEEEEE;
+    overflow: hidden;
+}
+.cp-meter-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+.ov-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; margin: 0 4px; }
+.ov-hint { margin-left: 6px; font-style: normal; font-size: 11px; color: #8493AC; }
+
+// ---------------------------------------------------------------------------
+// Create dialogs that go step by step (discussion, poll): the checklist in the rail, the notes, the option rows
+// ---------------------------------------------------------------------------
+.cc-state { color: #8493AC; }
+.cc-state--ok { color: #1C8A3B; }
+.cc-state--bad { color: #C0392B; }
+.cc-checks { display: flex; flex-direction: column; gap: 8px; }
+.cc-check { display: flex; align-items: flex-start; gap: 10px; width: 100%; padding: 10px 12px; border: 1px solid #E6ECF5; border-radius: 10px; background: #fff; text-align: left; font: inherit; cursor: pointer; transition: border-color .15s; }
+.cc-check:hover { border-color: var(--q-primary); }
+.cc-check > .q-icon { margin-top: 1px; }
+.cc-check-t { display: block; font-size: 13px; font-weight: 700; color: #16233A; }
+.cc-check-d { display: block; margin-top: 1px; font-size: 12px; color: #6B7A99; word-break: break-word; }
+.cc-check--ok > .q-icon { color: #1C8A3B; }
+.cc-check--bad { border-color: #F3CFD2; background: #FFF8F8; }
+.cc-check--bad > .q-icon { color: #C0392B; }
+.cc-check--opt > .q-icon { color: #A9B4C7; }
+.rc-msg { white-space: pre-line; overflow-wrap: anywhere; }
+.cc-note span { white-space: pre-line; }
+.cc-tokens { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.cc-note { display: flex; align-items: flex-start; gap: 8px; margin-top: 16px; padding: 10px 12px; border-radius: 10px; background: #F6F9FC; font-size: 12.5px; color: #6B7A99; }
+.cc-note .q-icon { margin-top: 2px; color: #8493AC; }
+.cc-fill .cc-textarea { display: flex; }
+.cc-fill .cc-textarea .q-field__control { height: auto; }
+.cc-fill .cc-textarea textarea { min-height: 220px; resize: vertical; padding: 12px 14px; }
+.wf-opt { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.wf-opt-n { flex: 0 0 28px; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(0, 78, 168, .1); color: var(--q-primary); font-weight: 700; font-size: 12.5px; }
+.wf-opt .q-field { flex: 1 1 auto; }
+.wf-date { width: 100%; max-width: 340px; }
+// manage pages: what a choice will do, as rows
+.wf-effects { display: flex; flex-direction: column; gap: 10px; }
+.wf-effect { display: flex; align-items: flex-start; gap: 12px; padding: 10px 12px; border: 1px solid #E6ECF5; border-radius: 10px; background: #fff; font-size: 12.5px; color: #6B7A99; }
+.wf-effect b { display: block; font-size: 13px; color: #16233A; }
+// a ranked row (most discussed / most voted): clickable, with a bar under it
+.ov-rank { cursor: pointer; padding: 6px 8px; margin: 0 -8px 6px; border-radius: 8px; }
+.ov-rank:hover { background: #F6F9FC; }
+.ov-rank .ov-step-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+// ---------------------------------------------------------------------------
+// Surveys: the question builder, the question lists and the results
+// ---------------------------------------------------------------------------
+.sv-q { margin-bottom: 14px; padding: 16px 18px; border: 1px solid #E6ECF5; border-left: 4px solid var(--q-primary); border-radius: 14px; background: #fff; }
+.sv-q--bad { border-color: #F3CFD2; border-left-color: #C0392B; background: #FFFDFD; }
+.sv-q-head { display: flex; align-items: center; gap: 12px; }
+.sv-q-n { flex: 0 0 28px; width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: rgba(0, 78, 168, .1); color: var(--q-primary); font-weight: 700; font-size: 12.5px; }
+.sv-types { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
+.sv-q-body { margin-top: 4px; }
+.sv-opt { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.sv-opt-ico { flex: none; color: #A9B4C7; }
+.sv-q-err { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 12px; color: #C0392B; }
+.sv-q-foot { display: flex; align-items: center; gap: 2px; margin-top: 12px; padding-top: 10px; border-top: 1px dashed #E6ECF5; }
+.sv-add { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 14px 16px; border: 2px dashed #DCE4F0; border-radius: 14px; background: #F9FBFE; }
+.sv-add-cap { margin-right: 6px; font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #8493AC; }
+.sv-prev { display: flex; align-items: flex-start; gap: 12px; padding: 9px 0; border-top: 1px solid #F0F3F8; }
+.sv-prev:first-of-type { border-top: 0; }
+.sv-prev-t { font-size: 13.5px; font-weight: 600; color: #16233A; word-break: break-word; }
+.sv-prev-d { margin-top: 2px; font-size: 12px; color: #8493AC; }
+.sv-req { margin-left: 4px; color: #C0392B; }
+.sv-res-head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+.sv-texts { display: flex; flex-direction: column; gap: 8px; }
+.sv-text { padding: 10px 12px; border: 1px solid #E6ECF5; border-radius: 10px; background: #F9FBFE; }
+.sv-text-t { font-size: 13.5px; color: #16233A; white-space: pre-wrap; word-break: break-word; }
+.sv-text-m { margin-top: 4px; font-size: 11.5px; color: #8493AC; }
+.sv-jump { display: flex; flex-direction: column; gap: 6px; }
+.sv-jump-i { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; border: 1px solid #E6ECF5; border-radius: 10px; background: #fff; text-align: left; font: inherit; cursor: pointer; }
+.sv-jump-i:hover { border-color: var(--q-primary); }
+.sv-jump-t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; color: #16233A; }
+
+// a tile grid with a set number of columns (4 wide, stepping down), so the last row stays balanced: 8 tiles are 4 + 4, 7 are 4 + 3
+.ov-cols-4 > * { flex: 1 1 calc(25% - 8px); }
+@media (max-width: 1100px) { .ov-cols-4 > * { flex-basis: calc(33.333% - 8px); } }
+@media (max-width: 640px) { .ov-cols-4 > * { flex-basis: calc(50% - 8px); } }
+
+// a flex child that is meant to be cut with an ellipsis must be allowed to shrink, or it pushes into its neighbours
+.row.no-wrap > .ellipsis, .row.no-wrap > .text-ellipsis { min-width: 0; }
+
+// ---- Preferences (office / user / holiday): the little pieces their overviews and dialogs add to the shared ones
+.pf-grid { display: grid; gap: 14px 16px; }
+.pf-grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.pf-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.pf-grid > div { min-width: 0; }
+.pf-grid .pf-span-2 { grid-column: span 2; }
+.pf-grid .pf-span-3 { grid-column: 1 / -1; }
+@media (max-width: 700px) { .pf-grid--2, .pf-grid--3 { grid-template-columns: 1fr; } .pf-grid .pf-span-2, .pf-grid .pf-span-3 { grid-column: auto; } }
+.pf-status { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; font-size: 12.5px; color: #4C5C79; }
+.pf-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.pf-chip { display: inline-flex; align-items: center; gap: 8px; max-width: 100%; padding: 6px 12px 6px 8px; border: 1px solid #DCE4F0; border-radius: 100px; background: #fff; cursor: pointer; font: inherit; color: #16233A; }
+.pf-chip:hover { background: #F6F9FC; border-color: #B8C6DD; }
+.pf-chip-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; font-weight: 600; }
+.pf-next { display: flex; align-items: center; gap: 12px; padding: 8px 4px; border-bottom: 1px solid #EDF1F7; cursor: pointer; }
+.pf-next:last-of-type { border-bottom: 0; }
+.pf-next:hover { background: #F6F9FC; }
+.pf-next-date { flex: none; width: 46px; padding: 4px 0; border-radius: 10px; background: #E5EEFC; color: #204888; text-align: center; line-height: 1.1; }
+.pf-next-date b { display: block; font-size: 17px; }
+.pf-next-date small { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; }
+.pf-next-text { min-width: 0; display: flex; flex-direction: column; }
+.pf-next-text b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.pf-next-text small { font-size: 11.5px; color: #8493AC; }
+
+// A page shell (Preference sections, Report) reuses .rc-main, whose own padding and scrolling belong to the modal body
+// (.rc-split > .rc-main). On a page the header and tabs already sit on the page's padding, so the content must not be inset again.
+.rc-shell > .rc-main { padding: 0; overflow: visible; display: block; }
+
+// ---- the feedback detail's Overview tab: the numbers and the path in one card, then the report and its details side
+// by side, then the offices as a grid of cards.
+.dv { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.dv > .rc-block, .dv-col > .rc-block { margin-bottom: 0; }
+.dv-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px 12px; }
+.dv-path { margin-top: 18px; padding-top: 18px; border-top: 1px dashed #E3EAF4; }
+.dv-remark { display: flex; align-items: flex-start; gap: 8px; margin-top: 14px; padding: 10px 12px; border-radius: 10px; background: #F6F9FC; font-size: 12.5px; line-height: 1.5; color: #4C5C79; }
+.dv-remark .q-icon { margin-top: 2px; color: #8493AC; }
+.dv-cols { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 16px; align-items: stretch; }
+.dv-col > .rc-block:first-child { flex: 1 1 auto; }
+.dv-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+@media (max-width: 1100px) { .dv-cols { grid-template-columns: minmax(0, 1fr); } }
+.dv-sub { margin-top: 20px; }
+.dv-none { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1px dashed #DCE4F0; border-radius: 10px; font-size: 12.5px; color: #8493AC; }
+.dv-fact .rc-pill { flex: none; white-space: nowrap; }
+.dv-fact .rc-fact-value { font-weight: 600; }
+.dv-offs { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+.dv-off { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border: 1px solid #E6ECF5; border-radius: 12px; background: #F9FBFE; min-width: 0; }
+.dv-off--off { opacity: .6; }
+.dv-off-top { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; min-width: 0; }
+.dv-off-top .rc-code, .dv-off-top .rc-pill { flex: none; }
+// the name sits on its own line under the code and the status, so a long name is read in full
+.dv-off-name { order: 5; flex: 1 0 100%; font-size: 12.5px; line-height: 1.35; color: #6B7A99; }
+.dv-line { display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; }
+.dv-line-at { margin-left: auto; font-weight: 400; font-size: 11.5px; color: #8493AC; white-space: nowrap; }
+.dv-line--ok { color: #1C8A3B; }
+.dv-line--bad { color: #C0392B; }
+.dv-line--warn { color: #B7791F; }
+.dv-line--plain { color: #4C5C79; }
+.dv-off .rc-off-why { margin-top: 0; }
+.dv-line-t { display: inline-block; }
+.dv-line-t::first-letter { text-transform: uppercase; }
+
+// ---- the photos of a feedback: three across; the third says how many more there are
+.rc-photos--three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.rc-photo-more { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(22, 35, 58, .62); color: #fff; font-size: 16px; font-weight: 700; letter-spacing: .02em; }
+
+// ---- the photo viewer: only a close icon and flat previous / next arrows, white over the picture
+.pg { position: relative; display: inline-flex; align-items: center; justify-content: center; max-width: 94vw; max-height: 92vh; }
+.pg-img { display: block; max-width: 94vw; max-height: 92vh; object-fit: contain; border-radius: 6px; }
+.pg-btn { position: absolute; color: #fff !important; filter: drop-shadow(0 1px 3px rgba(0, 0, 0, .75)); }
+.pg-btn .q-icon { font-size: 22px; }
+.pg-btn--prev { left: 6px; top: 50%; transform: translateY(-50%); }
+.pg-btn--next { right: 6px; top: 50%; transform: translateY(-50%); }
+.pg-btn--close { right: 6px; top: 6px; }
+
+// ---- the feedback detail's Activity tab: the overview of the activity on the left (the numbers, what happened, how it
+// moved, who took part) and the trail, day by day, in a column on the right.
+.av-pair > .rc-block { margin-bottom: 0; }
+// two cards side by side when there is room for both, one under the other when there is not
+.av-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 16px; align-items: stretch; }
+.av-kind + .av-kind { margin-top: 12px; }
+.av-kind-ico { width: 20px; height: 20px; border-radius: 6px; flex: none; display: inline-flex; align-items: center; justify-content: center; color: #fff; margin-right: 4px; }
+// the milestones, as a short vertical path
+.av-steps { display: flex; flex-direction: column; }
+.av-step { position: relative; display: flex; align-items: center; gap: 12px; padding: 8px 0; }
+.av-step + .av-step::before { content: ''; position: absolute; left: 13px; top: -14px; height: 22px; width: 2px; background: var(--q-primary); }
+.av-step--todo + .av-step::before, .av-step--todo::before { background: #DCE4F0 !important; }
+.av-step-dot { position: relative; z-index: 1; width: 28px; height: 28px; flex: none; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--q-primary); color: #fff; }
+.av-step--todo .av-step-dot { background: #fff; border: 2px solid #DCE4F0; color: #9AA7BA; }
+.av-step-text { display: flex; flex-direction: column; min-width: 0; flex: 1 1 auto; }
+.av-step-label { font-size: 13px; font-weight: 600; color: #16233A; }
+.av-step--todo .av-step-label { color: #8493AC; font-weight: 500; }
+.av-step-at { font-size: 11.5px; color: #8493AC; }
+.av-step .rc-pill { flex: none; white-space: nowrap; }
+// the people who acted
+.av-actors { display: flex; flex-direction: column; }
+.av-actor { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid #F0F3F8; min-width: 0; }
+.av-actor:first-child { border-top: 0; padding-top: 2px; }
+.av-avatar { width: 32px; height: 32px; flex: none; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #E5EEFC; color: #204888; font-size: 11.5px; font-weight: 700; }
+.av-actor-text { display: flex; flex-direction: column; min-width: 0; flex: 1 1 auto; }
+.av-actor-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 600; color: #16233A; }
+.av-actor-sub { font-size: 11.5px; color: #8493AC; }
+.av-actor-n { flex: none; min-width: 26px; padding: 1px 8px; border-radius: 10px; background: #E6ECF5; color: #3B4A66; font-size: 12px; font-weight: 700; text-align: center; }
+// the trail, in the right-hand panel (the panel scrolls; the day headings stay under its top edge while it does)
+// the trail panel scrolls under its caption and the heading of the day on screen, both flush with the top of the panel
+.rc-main:has(.rc-pg-side) .rc-pg-side:has(.av-cap), .rc-pg-side:has(.av-cap) { padding-top: 0; }
+.av-cap { position: sticky; top: 0; z-index: 3; box-sizing: border-box; height: 48px; margin: 0; padding: 24px 0 8px; display: flex; align-items: center; background: #F9FBFE; }
+.av-group + .av-group { margin-top: 4px; }
+// one heading per day, inside its own group: it stays under the caption while that day is on screen and the next day takes over
+.av-day { position: sticky; top: 48px; z-index: 2; margin: 0 0 6px; padding: 4px 0; background: #F9FBFE; font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #8493AC; }
+.av-ev { position: relative; display: flex; gap: 10px; padding: 0 0 14px; }
+.av-ev:not(:last-child)::before { content: ''; position: absolute; left: 11px; top: 24px; bottom: 0; width: 2px; background: #E3EAF4; }
+.av-ev:last-child::before { display: none; }
+.av-ev-dot { position: relative; z-index: 1; width: 24px; height: 24px; flex: none; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: #fff; }
+.av-ev-body { min-width: 0; flex: 1 1 auto; }
+.av-ev-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.av-ev-head b { font-size: 12.5px; color: #16233A; }
+.av-ev-head span { flex: none; font-size: 11px; color: #8493AC; }
+.av-ev-desc { margin-top: 2px; font-size: 12.5px; line-height: 1.45; color: #4C5C79; word-break: break-word; }
+.av-ev-who { margin-top: 2px; font-size: 11.5px; color: #8493AC; }
+
+// the empty state of a right-hand list (components/EmptyState.vue, `rail`): kept off the edges of the rail
+.es--rail { margin: 16px; }
+
+// the pills of the canned messages: the office-code pill at its smallest, in plain words
+.rc-codepill--text { min-width: 0; padding: 1px 8px; gap: 3px; font-size: 10.5px; font-weight: 600; letter-spacing: 0; line-height: 17px; }
+.cm .rc-codes { gap: 4px; }

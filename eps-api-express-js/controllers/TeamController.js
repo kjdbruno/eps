@@ -20,7 +20,7 @@ module.exports = (_io) => {
             try {
                 const users = await User.findAll({
                     where: { role: { [Op.ne]: 'citizen' }, id: { [Op.ne]: req.userId } },
-                    attributes: ['id', 'firstname', 'lastname', 'username', 'role', 'avatar', 'isActive'],
+                    attributes: ['id', 'firstname', 'lastname', 'username', 'role', 'avatar', 'isActive', 'phoneNo', 'lastLoginAt', 'createdAt'],
                     include: [
                         { model: Staff, as: 'staff', include: [{ model: Office, as: 'office', attributes: ['id', 'name', 'alias'] }] },
                     ],
@@ -61,6 +61,9 @@ module.exports = (_io) => {
                         role: json.role,
                         avatar: json.avatar,
                         isActive: json.isActive,
+                        phoneNo: json.phoneNo || null,
+                        lastLoginAt: json.lastLoginAt || null,
+                        createdAt: json.createdAt,
                         office: json.staff?.office?.alias || json.staff?.office?.name || null,
                         isOnline: !!onlineByUser[json.id],
                         unreadCount: unreadBySender[json.id] || 0,

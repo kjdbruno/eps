@@ -1,16 +1,27 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../api/api_exception.dart';
 import '../../state/auth_controller.dart';
 import '../widgets/app_snack.dart';
 import '../widgets/auth_scaffold.dart';
+import '../widgets/eps_ui.dart';
 import '../widgets/otp_field.dart';
+import '../widgets/eps_loader.dart';
 
 class VerifyEmailScreen extends StatefulWidget {
-  const VerifyEmailScreen({super.key, required this.email});
+  const VerifyEmailScreen({
+    super.key,
+    required this.email,
+    required this.scrollController,
+    required this.onDone,
+  });
+
   final String email;
+  final ScrollController scrollController;
+
+  /// Verified (and so signed in): close the sheet and go on to the app.
+  final VoidCallback onDone;
 
   @override
   State<VerifyEmailScreen> createState() => _VerifyEmailScreenState();
@@ -37,7 +48,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     });
     try {
       await context.read<AuthController>().verifyEmail(widget.email, code);
-      if (mounted) context.go('/home');
+      if (mounted) widget.onDone();
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
     } finally {
@@ -57,7 +68,9 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   @override
   Widget build(BuildContext context) {
     return AuthScaffold(
+      scrollController: widget.scrollController,
       title: 'Verify Email',
+      icon: Icons.mark_email_read_outlined,
       subtitle: 'Enter the 6-digit code sent to '
           '${widget.email.isEmpty ? 'your email' : widget.email}.',
       child: Column(
@@ -66,24 +79,13 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
           OtpField(key: _otpKey, onCompleted: (_) => _submit()),
           if (_error != null) ...[
             const SizedBox(height: 12),
-            Text(
-              _error!,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
+            ErrorBox(_error!),
           ],
           const SizedBox(height: 20),
           FilledButton(
             onPressed: _loading ? null : _submit,
             child: _loading
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
+                ? const DotsSpinner(color: Color(0xFF1D1D1D))
                 : const Text('Verify'),
           ),
           TextButton(onPressed: _resend, child: const Text('Resend code')),

@@ -15,6 +15,10 @@ module.exports = (sequelize, DataTypes) => {
         as: 'option',
         onDelete: 'CASCADE',
       });
+      PollVote.hasMany(models.PollAnswer, {
+        foreignKey: 'voteId',
+        as: 'answers',
+      });
       PollVote.belongsTo(models.User, {
         foreignKey: 'userId',
         as: 'user',
@@ -38,9 +42,11 @@ module.exports = (sequelize, DataTypes) => {
       onUpdate: 'CASCADE',
       onDelete: 'CASCADE'
     },
+    // Legacy: before surveys a vote was one option. A response is now its answers (PollAnswer), and this
+    // stays empty for new ones; the row itself is the respondent's whole response.
     optionId: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
       references: {
         model: 'polloptions',
         key: 'id'

@@ -22,7 +22,11 @@ class ComplaintFile {
 }
 
 class ComplaintOffice {
-  ComplaintOffice({required this.id, required this.status, required this.label});
+  ComplaintOffice({
+    required this.id,
+    required this.status,
+    required this.label,
+  });
 
   final int id;
   final String status;
@@ -92,16 +96,19 @@ class ComplaintResponse {
       createdAt: asDate(json['createdAt']),
       author: user,
       department: department,
-      files: asMapList(json['responseFiles'])
-          .map(ComplaintFile.fromJson)
-          .toList(),
+      files:
+          asMapList(json['responseFiles']).map(ComplaintFile.fromJson).toList(),
       myRating: mine.isEmpty ? 0 : asInt(mine.first['rate']),
     );
   }
 }
 
 class HistoryEntry {
-  HistoryEntry({required this.id, required this.description, required this.createdAt});
+  HistoryEntry({
+    required this.id,
+    required this.description,
+    required this.createdAt,
+  });
 
   final int id;
   final String description;
@@ -160,9 +167,11 @@ class Complaint {
             .map(ComplaintOffice.fromJson)
             .toList(),
         responses: asMapList(json['responses'])
-            .map((r) => ComplaintResponse.fromJson(r, currentUserId: currentUserId))
+            .map(
+              (r) =>
+                  ComplaintResponse.fromJson(r, currentUserId: currentUserId),
+            )
             .toList(),
-        history:
-            asMapList(json['history']).map(HistoryEntry.fromJson).toList(),
+        history: asMapList(json['history']).map(HistoryEntry.fromJson).toList(),
       );
 }

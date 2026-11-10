@@ -15,7 +15,8 @@ class AppNotification {
   final bool isRead;
   final DateTime? createdAt;
 
-  factory AppNotification.fromJson(Map<String, dynamic> json) => AppNotification(
+  factory AppNotification.fromJson(Map<String, dynamic> json) =>
+      AppNotification(
         id: asInt(json['id']),
         content: asString(json['content']),
         isRead: asBool(json['isRead']),

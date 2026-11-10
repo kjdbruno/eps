@@ -31,6 +31,7 @@ class AuthController extends ChangeNotifier {
         _push = push {
     _api.tokenProvider = () => _token;
     _api.onUnauthorized = _onUnauthorized;
+    _api.onPasswordChangeRequired = _onPasswordChangeRequired;
     _socket.onForceLogout = _handleForceLogout;
     _socket.onNotifications = _setNotifications;
   }
@@ -71,8 +72,10 @@ class AuthController extends ChangeNotifier {
   int get notificationCount => _notificationCount;
   List<AppNotification> get notifications => _notifications;
 
-  /// Restore a persisted session (if "Remember me" was on) on launch.
-  Future<void> bootstrap() async {
+  /// Restore a persisted session (if "Remember me" was on) on launch. The splash stays up for at
+  /// least [minSplash], so the loader is seen even when the session is read instantly.
+  Future<void> bootstrap({Duration minSplash = Duration.zero}) async {
+    final started = Stopwatch()..start();
     try {
       final prefs = await SharedPreferences.getInstance();
       _rememberMe = prefs.getBool(_rememberKey) ?? true;
@@ -91,6 +94,8 @@ class AuthController extends ChangeNotifier {
       _socket.connect(_token!);
       unawaited(_push?.registerCurrentToken());
     }
+    final remaining = minSplash - started.elapsed;
+    if (remaining > Duration.zero) await Future<void>.delayed(remaining);
     _ready = true;
     notifyListeners();
   }
@@ -123,6 +128,13 @@ class AuthController extends ChangeNotifier {
     final result = await _auth.verifyEmail(email, code);
     // A freshly created / verified account stays signed in across restarts.
     await _persistSession(result.user, result.token, true, email);
+  }
+
+  /// First login of an account with a temporary password: choose its own. On success the router
+  /// lets the account on to the app.
+  Future<void> changePassword(String currentPassword, String newPassword) async {
+    await _auth.changePassword(currentPassword, newPassword);
+    await _setMustChangePassword(false);
   }
 
   Future<String> resendVerification(String email) =>
@@ -206,6 +218,22 @@ class AuthController extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_userKey);
     notifyListeners();
+  }
+
+  /// Keeps the flag on the persisted profile too (only when the session is remembered).
+  Future<void> _setMustChangePassword(bool value) async {
+    final user = _user;
+    if (user == null || user.mustChangePassword == value) return;
+    _user = user.withPasswordChanged(value);
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.containsKey(_userKey)) {
+      await prefs.setString(_userKey, jsonEncode(_user!.toJson()));
+    }
+    notifyListeners();
+  }
+
+  void _onPasswordChangeRequired() {
+    if (isAuthenticated) unawaited(_setMustChangePassword(true));
   }
 
   void _onUnauthorized() {

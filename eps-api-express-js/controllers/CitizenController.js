@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const fs = require('fs');
 const path = require('path');
 const transporter = require('../utils/mailer');
+const mailFrom = require('../utils/mailFrom');
 const otpGenerator = require('../utils/otp');
 const { User, Citizen } = require('../models');
 
@@ -12,7 +13,7 @@ const sendVerificationEmail = async (email, code) => {
     html = html.replace('{{ otp }}', code);
 
     await transporter.sendMail({
-        from: `"CSFLU - Complaint Hotline" <${process.env.MAIL_USER}>`,
+        from: mailFrom(),
         to: email,
         subject: 'Verify your email',
         html
@@ -29,7 +30,7 @@ const sendResetPasswordEmail = async (email, code) => {
     html = html.replace('{{ code }}', code);
 
     await transporter.sendMail({
-        from: `"CSFLU - Complaint Hotline" <${process.env.MAIL_USER}>`,
+        from: mailFrom(),
         to: email,
         subject: 'Reset your password',
         html
@@ -102,6 +103,7 @@ module.exports = {
 
             await citizen.update({ isVerified: true, verifiedAt: new Date(), verificationCode: null });
 
+            await citizen.user.update({ lastLoginAt: new Date() });
             const token = issueToken(citizen.user);
             return res.status(200).json({ message: 'Email verified successfully.', user: withProfile(citizen), token });
         } catch (error) {
@@ -156,6 +158,7 @@ module.exports = {
                 return res.status(403).json({ message: 'This account has been disabled.' });
             }
 
+            await citizen.user.update({ lastLoginAt: new Date() });
             const token = issueToken(citizen.user);
             return res.json({ user: withProfile(citizen), token });
         } catch (error) {

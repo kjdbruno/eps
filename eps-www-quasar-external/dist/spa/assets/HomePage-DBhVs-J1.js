@@ -1,0 +1,1 @@
+import{A as e,l as t}from"./runtime-core.esm-bundler-DYtyFWwP.js";import{t as n}from"./PortalLanding-DiLlMU_A.js";var r={__name:`HomePage`,setup(r){return(r,i)=>(e(),t(n,{authed:``}))}};export{r as default};

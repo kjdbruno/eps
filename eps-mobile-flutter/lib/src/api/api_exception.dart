@@ -23,6 +23,10 @@ class ApiException implements Exception {
 
   String? get emailFromBody => data?['email'] as String?;
 
+  /// 428 from any authenticated endpoint: the account has to choose its own password first.
+  bool get mustChangePassword =>
+      statusCode == 428 && data?['mustChangePassword'] == true;
+
   factory ApiException.fromDio(DioException e) {
     final res = e.response;
     final body = res?.data;
@@ -57,7 +61,9 @@ class ApiException implements Exception {
     }
 
     return ApiException(
-      _fallbackForStatus(res?.statusCode) ?? e.message ?? 'Something went wrong.',
+      _fallbackForStatus(res?.statusCode) ??
+          e.message ??
+          'Something went wrong.',
       statusCode: res?.statusCode,
     );
   }

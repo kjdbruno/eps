@@ -1,70 +1,92 @@
 <template>
-    <q-page class="kc-page">
-        <div class="kc-shell">
-            <div class="text-center q-mb-lg">
-                <div class="kx-eyebrow">complaint module</div>
-                <div class="text-h4 text-weight-bold">File a Complaint</div>
-                <div class="text-body1 text-grey">No account needed — we'll email you a one-time code to verify it.</div>
+    <div class="kx-center">
+        <div class="kx-head">
+            <span class="kx-head-ico"><q-icon name="bi-chat-quote" /></span>
+            <div>
+                <div class="kx-head-t">File a complaint</div>
+                <div class="kx-head-s">No account needed — we'll email you a one-time code to verify it.</div>
+            </div>
+        </div>
+
+        <!-- 1. who is reporting -->
+        <div class="kx-card kx-form-card">
+            <div class="kx-sec"><span>1</span>Who is reporting</div>
+
+            <div class="kx-anon" :class="{ 'kx-anon--on': isAnonymous }" @click="isAnonymous = !isAnonymous">
+                <span class="ico"><q-icon name="bi-incognito" /></span>
+                <div>
+                    <b>Report anonymously</b>
+                    <small>Your name stays hidden. Your email and number are used only to send the one-time code.</small>
+                    <small>I-check ang box kung ayaw magpakilala sa reklamo.</small>
+                </div>
+                <q-toggle :model-value="isAnonymous" size="lg" color="primary" @click.stop @update:model-value="isAnonymous = $event" />
             </div>
 
-            <q-card flat class="kc-card radius-md custom-border q-pa-xl">
-                <q-checkbox
-                    v-model="isAnonymous" size="lg"
-                    label="Report Anonymously (I-check ang box kung ayaw magpakilala sa reklamo)"
-                    class="q-mb-lg"
-                />
-
-                <div class="row q-col-gutter-md q-mb-md" v-if="!isAnonymous">
-                    <div class="col-12 col-sm-6">
-                        <q-input outlined v-model="firstname" label="Firstname (required)" :error="errors.firstname.type" :error-message="errors.firstname.message" no-error-icon input-class="kc-input" />
+            <div class="kx-grid q-mt-md">
+                <template v-if="!isAnonymous">
+                    <div>
+                        <div class="kx-label" :class="{ 'kx-label--err': errors.firstname.type }">First name <i>required</i></div>
+                        <q-input v-model="firstname" outlined class="kx-field" placeholder="Juan" :error="errors.firstname.type" no-error-icon />
+                        <div class="kx-err" v-if="errors.firstname.type">{{ errors.firstname.message }}</div>
                     </div>
-                    <div class="col-12 col-sm-6">
-                        <q-input outlined v-model="lastname" label="Lastname (required)" :error="errors.lastname.type" :error-message="errors.lastname.message" no-error-icon input-class="kc-input" />
+                    <div>
+                        <div class="kx-label" :class="{ 'kx-label--err': errors.lastname.type }">Last name <i>required</i></div>
+                        <q-input v-model="lastname" outlined class="kx-field" placeholder="Dela Cruz" :error="errors.lastname.type" no-error-icon />
+                        <div class="kx-err" v-if="errors.lastname.type">{{ errors.lastname.message }}</div>
                     </div>
+                </template>
+                <div>
+                    <div class="kx-label" :class="{ 'kx-label--err': errors.email.type }">Email <i>required</i></div>
+                    <q-input v-model="email" type="email" outlined class="kx-field" placeholder="you@example.com" :error="errors.email.type" no-error-icon />
+                    <div class="kx-err" v-if="errors.email.type">{{ errors.email.message }}</div>
                 </div>
-
-                <div class="row q-col-gutter-md q-mb-md">
-                    <div class="col-12 col-sm-6">
-                        <q-input outlined v-model="email" label="Email (required)" :error="errors.email.type" :error-message="errors.email.message" no-error-icon input-class="kc-input" />
-                    </div>
-                    <div class="col-12 col-sm-6">
-                        <q-input outlined v-model="contactNo" label="Contact no. (required)" :error="errors.contactNo.type" :error-message="errors.contactNo.message" no-error-icon input-class="kc-input" />
-                    </div>
+                <div>
+                    <div class="kx-label" :class="{ 'kx-label--err': errors.contactNo.type }">Contact no. <i>required</i></div>
+                    <q-input v-model="contactNo" outlined class="kx-field" placeholder="09XXXXXXXXX" :error="errors.contactNo.type" no-error-icon />
+                    <div class="kx-err" v-if="errors.contactNo.type">{{ errors.contactNo.message }}</div>
                 </div>
-
-                <q-separator class="q-my-lg" />
-
-                <div class="text-subtitle1 text-weight-bold q-mb-sm">What happened?</div>
-                <q-input
-                    outlined type="textarea" rows="6" v-model="content" label="Describe your complaint"
-                    :error="errors.content.type" :error-message="errors.content.message" no-error-icon
-                    input-class="kc-input"
-                />
-                <div class="text-caption text-grey q-mt-xs">
-                    <q-icon name="bi-info-circle" size="xs" class="q-mr-xs" />
-                    We'll route this to the right department automatically based on what you describe here.
-                </div>
-
-                <q-file
-                    outlined v-model="files" counter use-chips multiple max-files="5" accept="image/*"
-                    label="Attach photos (optional, up to 5)" class="q-mt-lg"
-                >
-                    <template v-slot:prepend><q-icon name="bi-paperclip" /></template>
-                </q-file>
-
-                <div class="q-mt-lg text-caption text-grey">
-                    <div class="text-uppercase text-weight-bold">data privacy notice</div>
-                    Ang anumang impormasyon na aming makukuha ay gagamitin sa transaksyon na ito at sa pakikipag-ugnayan sa ePS,
-                    alinsunod sa Data Privacy Act. Ang pagpapatuloy ay nangangahulugan ng inyong pagsang-ayon.
-                </div>
-
-                <q-btn
-                    unelevated color="primary" size="lg" class="full-width q-mt-xl" label="submit complaint"
-                    :loading="loading" @click="submit"
-                />
-            </q-card>
+            </div>
         </div>
-    </q-page>
+
+        <!-- 2. what happened -->
+        <div class="kx-card kx-form-card">
+            <div class="kx-sec"><span>2</span>What happened</div>
+            <div class="kx-label" :class="{ 'kx-label--err': errors.content.type }">Describe your complaint <i>required</i></div>
+            <q-input
+                v-model="content" type="textarea" rows="6" outlined class="kx-field"
+                placeholder="Tell us what is wrong, where, and since when..."
+                :error="errors.content.type" no-error-icon
+            />
+            <div class="kx-err" v-if="errors.content.type">{{ errors.content.message }}</div>
+            <div class="kx-note q-mt-sm">
+                <q-icon name="bi-signpost-split" size="20px" />
+                <span>No category to pick — we read what you write and send it to the right department automatically.</span>
+            </div>
+        </div>
+
+        <!-- 3. photos -->
+        <div class="kx-card kx-form-card">
+            <div class="kx-sec"><span>3</span>Photos <em>optional</em></div>
+            <q-file
+                v-model="files" outlined multiple use-chips counter max-files="5" accept="image/*"
+                class="kx-field" placeholder="Attach up to 5 photos"
+            >
+                <template v-slot:prepend><q-icon name="bi-images" /></template>
+            </q-file>
+        </div>
+
+        <q-expansion-item class="kx-card q-mb-md" expand-icon="bi-chevron-down" expanded-icon="bi-chevron-up" icon="bi-shield-check" label="Data privacy notice" header-class="text-weight-bold">
+            <div class="q-px-md q-pb-md text-caption text-grey-7">
+                Ang anumang impormasyon na aming makukuha ay gagamitin sa transaksyon na ito at sa pakikipag-ugnayan sa ePS,
+                alinsunod sa Data Privacy Act. Ang pagpapatuloy ay nangangahulugan ng inyong pagsang-ayon.
+            </div>
+        </q-expansion-item>
+
+        <div class="kx-actions q-mb-lg">
+            <q-btn flat rounded no-caps color="primary" class="kx-btn" icon="bi-arrow-left" label="Back" to="/" />
+            <q-btn unelevated rounded no-caps color="primary" class="kx-btn" icon-right="bi-send" label="Submit complaint" :loading="loading" @click="submit" />
+        </div>
+    </div>
 </template>
 
 <script setup>
@@ -165,25 +187,3 @@ const submit = async () => {
     }
 };
 </script>
-
-<style scoped>
-.kc-page {
-    padding: 32px;
-    display: flex;
-    justify-content: center;
-}
-.kc-shell {
-    width: 100%;
-    max-width: 720px;
-}
-.kx-eyebrow {
-    font-size: 13px;
-    letter-spacing: .08em;
-    text-transform: uppercase;
-    color: #8493AC;
-    margin-bottom: 4px;
-}
-.kc-card {
-    background: #FFFFFF;
-}
-</style>

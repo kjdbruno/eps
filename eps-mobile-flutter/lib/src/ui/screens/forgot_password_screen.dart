@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../api/api_exception.dart';
 import '../../state/auth_controller.dart';
 import '../widgets/app_snack.dart';
+import '../../theme/app_theme.dart';
 import '../widgets/auth_scaffold.dart';
+import '../widgets/eps_ui.dart';
 import '../widgets/otp_field.dart';
+import '../widgets/eps_loader.dart';
 
 enum _Step { email, code, reset }
 
@@ -16,7 +18,17 @@ enum _Step { email, code, reset }
 ///   2. enter the code   → verified on its own (not consumed)
 ///   3. new password     → reset, then back to sign-in
 class ForgotPasswordScreen extends StatefulWidget {
-  const ForgotPasswordScreen({super.key, this.email = ''});
+  const ForgotPasswordScreen({
+    super.key,
+    required this.scrollController,
+    required this.onGo,
+    this.email = '',
+  });
+
+  final ScrollController scrollController;
+
+  /// Switch the sheet to another step (back to sign in).
+  final AuthGo onGo;
   final String email;
 
   @override
@@ -75,7 +87,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       if (!mounted) return;
       if (resend) {
         _otpKey.currentState?.clear();
-        showSnack(context, 'If that email is registered, a new code has been sent.');
+        showSnack(
+          context,
+          'If that email is registered, a new code has been sent.',
+        );
       } else {
         setState(() => _step = _Step.code);
       }
@@ -116,7 +131,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         );
         if (!mounted) return;
         showSnack(context, msg);
-        context.go('/login');
+        widget.onGo(AuthStep.login, email: _email.text.trim());
       } on ApiException catch (e) {
         // The code passed step 2 but can still have expired (15-min TTL) — send
         // them back to re-enter a fresh one rather than stranding them here.
@@ -136,25 +151,44 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return AuthScaffold(
+      scrollController: widget.scrollController,
       title: 'Forgot Password',
+      icon: Icons.key_rounded,
       subtitle: _subtitle,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // where you are: email, code, new password
+          Row(
+            children: [
+              for (final i in [0, 1, 2]) ...[
+                if (i > 0) const SizedBox(width: 6),
+                Expanded(
+                  child: Container(
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: i <= _step.index
+                          ? AppTheme.secondary
+                          : Colors.white.withValues(alpha: 0.28),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 18),
           ..._stepFields(),
           if (_error != null) ...[
             const SizedBox(height: 12),
-            Text(
-              _error!,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
+            ErrorBox(_error!),
           ],
           const SizedBox(height: 20),
           ..._stepActions(),
           const SizedBox(height: 8),
           TextButton(
-            onPressed: () => context.go('/login'),
+            onPressed: () =>
+                widget.onGo(AuthStep.login, email: _email.text.trim()),
             child: const Text('Back to sign in'),
           ),
         ],
@@ -170,7 +204,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             controller: _email,
             keyboardType: TextInputType.emailAddress,
             autofillHints: const [AutofillHints.email],
-            decoration: const InputDecoration(labelText: 'Email'),
+            decoration: const InputDecoration(
+              hintText: 'Email',
+              prefixIcon: Icon(Icons.mail_outline_rounded, size: 20),
+            ),
             onSubmitted: (_) => _sendCode(),
           ),
         ];
@@ -182,9 +219,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             controller: _password,
             obscureText: _obscure,
             decoration: InputDecoration(
-              labelText: 'New password',
+              hintText: 'New password',
+              prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20),
               suffixIcon: IconButton(
-                icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
+                icon: Icon(
+                  _obscure
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
+                  size: 20,
+                ),
                 onPressed: () => setState(() => _obscure = !_obscure),
               ),
             ),
@@ -193,7 +236,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           TextField(
             controller: _confirm,
             obscureText: _obscure,
-            decoration: const InputDecoration(labelText: 'Confirm new password'),
+            decoration: const InputDecoration(
+              hintText: 'Confirm new password',
+              prefixIcon: Icon(Icons.lock_rounded, size: 20),
+            ),
             onSubmitted: (_) => _resetPassword(),
           ),
         ];
@@ -201,13 +247,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   List<Widget> _stepActions() {
-    final spinner = _loading
-        ? const SizedBox(
-            height: 20,
-            width: 20,
-            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-          )
-        : null;
+    final spinner =
+        _loading ? const DotsSpinner(color: Color(0xFF1D1D1D)) : null;
 
     switch (_step) {
       case _Step.email:

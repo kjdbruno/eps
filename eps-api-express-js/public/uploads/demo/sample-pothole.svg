@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
+<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9CC9F5"/><stop offset="1" stop-color="#E6F2FC"/></linearGradient></defs>
+<rect width="800" height="600" fill="url(#sky)"/>
+<rect x="20" y="170" width="120" height="130" fill="#C9D6E6"/><rect x="150" y="120" width="150" height="180" fill="#B7C7DB"/><rect x="310" y="190" width="110" height="110" fill="#D5DFEC"/><rect x="430" y="140" width="160" height="160" fill="#BDCBDD"/><rect x="600" y="180" width="170" height="120" fill="#CBD7E7"/><rect y="360" width="800" height="240" fill="#4A4F57"/>
+<rect y="346" width="800" height="14" fill="#9AA3AE"/>
+<g fill="#F3F0E4"><rect x="20" y="480" width="90" height="10" rx="3"/><rect x="170" y="480" width="90" height="10" rx="3"/><rect x="320" y="480" width="90" height="10" rx="3"/><rect x="470" y="480" width="90" height="10" rx="3"/><rect x="620" y="480" width="90" height="10" rx="3"/><rect x="770" y="480" width="90" height="10" rx="3"/></g>
+<ellipse cx="400" cy="470" rx="150" ry="46" fill="#23262B"/>
+<ellipse cx="400" cy="462" rx="132" ry="34" fill="#15171A"/>
+<path d="M250 470 q40 -60 80 -22 M470 440 q60 -30 82 24" stroke="#3A3F46" stroke-width="6" fill="none"/>
+<g><rect x="610" y="420" width="10" height="80" fill="#C9702A"/><path d="M590 420 h50 l-25 -44z" fill="#F2A33A"/></g>
+<rect x="18" y="552" width="150" height="30" rx="8" fill="rgba(0,0,0,.45)"/>
+<text x="93" y="572" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#fff" text-anchor="middle">POTHOLE</text>
+</svg>

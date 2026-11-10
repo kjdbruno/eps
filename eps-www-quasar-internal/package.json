@@ -2,7 +2,7 @@
   "name": "feedback-internal-quasar",
   "version": "0.0.1",
   "description": "Community Engagement Platform",
-  "productName": "Feedback App",
+  "productName": "ePS",
   "author": "Kenneth Jay Bruno",
   "type": "module",
   "private": true,

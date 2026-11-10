@@ -1,61 +1,66 @@
 <template>
-    <q-page class="kv-page">
-        <div class="kv-shell">
-            <template v-if="!verified">
-                <div class="text-center q-mb-lg">
-                    <div class="kx-eyebrow">complaint module</div>
-                    <div class="text-h4 text-weight-bold">Verify Your Complaint</div>
-                    <div class="text-body1 text-grey">Enter the one-time pin (OTP) emailed to you after filing.</div>
+    <div class="kx-center kx-center--narrow">
+        <template v-if="!verified">
+            <div class="kx-head">
+                <span class="kx-head-ico"><q-icon name="bi-patch-check" /></span>
+                <div>
+                    <div class="kx-head-t">Verify your complaint</div>
+                    <div class="kx-head-s">Enter the one-time pin (OTP) emailed to you after filing.</div>
                 </div>
+            </div>
 
-                <q-card flat class="kv-card radius-md custom-border q-pa-xl">
+            <div class="kx-card kx-form-card">
+                <div class="kx-sec"><span>1</span>Your reference number</div>
+                <q-input
+                    v-model="referenceNoInput" outlined class="kx-field" placeholder="EPS2026..."
+                    :error="!!error && !referenceNoInput.trim()" no-error-icon
+                >
+                    <template #prepend><q-icon name="bi-hash" /></template>
+                </q-input>
+                <div class="text-caption text-grey q-mt-xs q-ml-sm">Shown when you filed — also in the confirmation email.</div>
+            </div>
+
+            <div class="kx-card kx-form-card">
+                <div class="kx-sec"><span>2</span>The 6-digit code</div>
+                <div class="kx-otp">
                     <q-input
-                        outlined v-model="referenceNoInput" label="Reference number" class="q-mb-lg"
-                        hint="Shown when you filed — also in the confirmation email."
-                        input-class="kc-input"
+                        v-for="(digit, index) in otp.code.value"
+                        :key="index"
+                        :ref="el => { if (el) otp.inputs.value[index] = el }"
+                        outlined
+                        maxlength="1"
+                        v-model="otp.code.value[index]"
+                        input-class="kx-otp-input"
+                        class="kx-otp-box"
+                        @update:model-value="val => otp.onInput(val, index)"
+                        @keydown.backspace="otp.onBackspace(index)"
+                        @paste="otp.onPaste"
                     />
+                </div>
+                <div class="kx-note" v-if="error" style="background: #FCE8E6; border-color: #F3C4BE; color: #A52E22;">
+                    <q-icon name="bi-exclamation-circle" size="20px" style="color: #A52E22;" />
+                    <span>{{ error }}</span>
+                </div>
+            </div>
 
-                    <div class="text-subtitle1 text-weight-bold text-center q-mb-md">One-time pin</div>
-                    <div class="row justify-center q-gutter-sm q-mb-lg">
-                        <q-input
-                            v-for="(digit, index) in otp.code.value"
-                            :key="index"
-                            :ref="el => { if (el) otp.inputs.value[index] = el }"
-                            outlined
-                            maxlength="1"
-                            v-model="otp.code.value[index]"
-                            input-class="kv-otp-input"
-                            class="kv-otp-box"
-                            @update:model-value="val => otp.onInput(val, index)"
-                            @keydown.backspace="otp.onBackspace(index)"
-                            @paste="otp.onPaste"
-                        />
-                    </div>
-                    <div class="text-negative text-caption text-center q-mb-md" v-if="error">{{ error }}</div>
+            <q-btn unelevated rounded no-caps color="primary" class="kx-btn full-width" icon-right="bi-check2" label="Verify" :loading="loading" @click="submit" />
+            <div class="text-center q-mt-md q-mb-lg">
+                <q-btn flat no-caps rounded color="primary" label="Didn't get a code? File again" to="/complaint" />
+            </div>
+        </template>
 
-                    <q-btn unelevated color="primary" size="lg" class="full-width" label="verify" :loading="loading" @click="submit" />
-
-                    <div class="text-center q-mt-lg">
-                        <q-btn flat no-caps color="primary" label="didn't get a code? file again" to="/complaint" />
-                    </div>
-                </q-card>
-            </template>
-
-            <template v-else>
-                <q-card flat class="kv-card kv-success radius-md custom-border q-pa-xl text-center">
-                    <q-icon name="bi-check-circle-fill" color="positive" size="72px" class="q-mb-md" />
-                    <div class="text-h5 text-weight-bold q-mb-sm">Complaint Verified!</div>
-                    <div class="text-body1 text-grey q-mb-lg">Your complaint has been confirmed and routed automatically.</div>
-                    <div class="kv-refbox q-mb-lg">
-                        <div class="text-caption text-uppercase text-grey">reference no.</div>
-                        <div class="text-h5 text-weight-bold">{{ referenceNo }}</div>
-                    </div>
-                    <div class="text-caption text-grey q-mb-lg">Returning to home in {{ countdown }}s&hellip;</div>
-                    <q-btn unelevated color="primary" size="lg" class="full-width" label="done" to="/" />
-                </q-card>
-            </template>
-        </div>
-    </q-page>
+        <template v-else>
+            <div class="kx-card kx-done">
+                <div class="kx-done-ico"><q-icon name="bi-check-lg" /></div>
+                <div class="kx-done-t">Complaint verified!</div>
+                <div class="kx-done-s">Your complaint has been confirmed and routed automatically.</div>
+                <div class="kx-ref"><small>your reference no.</small><b>{{ referenceNo }}</b></div>
+                <div class="kx-done-s">Please write this down — you will need it to track your complaint.</div>
+                <div class="kx-count">Returning to home in {{ countdown }}s&hellip;</div>
+                <q-btn unelevated rounded no-caps color="primary" class="kx-btn full-width" icon="bi-house-fill" label="Done" to="/" />
+            </div>
+        </template>
+    </div>
 </template>
 
 <script setup>
@@ -113,38 +118,3 @@ onUnmounted(() => {
     if (countdownTimer) clearInterval(countdownTimer);
 });
 </script>
-
-<style scoped>
-.kv-page {
-    padding: 32px;
-    display: flex;
-    justify-content: center;
-}
-.kv-shell {
-    width: 100%;
-    max-width: 560px;
-}
-.kx-eyebrow {
-    font-size: 13px;
-    letter-spacing: .08em;
-    text-transform: uppercase;
-    color: #8493AC;
-    margin-bottom: 4px;
-}
-.kv-card {
-    background: #FFFFFF;
-}
-.kv-otp-box {
-    width: clamp(44px, 12vw, 64px);
-}
-.kv-otp-input {
-    text-align: center;
-    font-size: 26px;
-    font-weight: 700;
-}
-.kv-refbox {
-    background: #F6F9FC;
-    border-radius: 12px;
-    padding: 16px;
-}
-</style>

@@ -132,7 +132,7 @@ export default route(function ({ store }) { // <--- store is injected here by Qu
     }
 
     // Public routes (landing + the standalone auth/complaint pages — none of these require a session)
-    const publicRoutes = ['/', '/login', '/register', '/verify-email', '/verify-complaint', '/forgot-password', '/track', '/file-complaint'];
+    const publicRoutes = ['/', '/login', '/register', '/verify-email', '/verify-complaint', '/forgot-password', '/file-complaint'];
     // Discussion/poll are usable with no account, and take a dynamic :id segment, so they're
     // matched by prefix rather than an exact list entry.
     const isDiscussionOrPollRoute = to.path === '/discussion' || to.path.startsWith('/discussion/')
@@ -148,6 +148,14 @@ export default route(function ({ store }) { // <--- store is injected here by Qu
             authStore.clearAuthData(); // Ensure cleanup if token was invalid
             return next('/'); // Redirect to login
         }
+    }
+
+    // An account that still has the temporary password it was sent can only choose its own: the API refuses everything else
+    if (authStore.isAuthenticated && authStore.user?.mustChangePassword && to.path !== '/change-password') {
+        return next('/change-password');
+    }
+    if (to.path === '/change-password' && (!authStore.isAuthenticated || !authStore.user?.mustChangePassword)) {
+        return next(authStore.isAuthenticated ? '/home' : '/login');
     }
 
     if (authStore.isAuthenticated && ['/', '/login', '/register'].includes(to.path)) {

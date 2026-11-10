@@ -14,6 +14,15 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'optionId',
         as: 'votes',
       });
+      PollOption.belongsTo(models.PollQuestion, {
+        foreignKey: 'questionId',
+        as: 'question',
+        onDelete: 'CASCADE',
+      });
+      PollOption.hasMany(models.PollAnswer, {
+        foreignKey: 'optionId',
+        as: 'answers',
+      });
     }
   }
   PollOption.init({
@@ -28,6 +37,17 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       references: {
         model: 'polls',
+        key: 'id'
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
+    },
+    // The question these choices belong to (a survey question with choices).
+    questionId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'pollquestions',
         key: 'id'
       },
       onUpdate: 'CASCADE',

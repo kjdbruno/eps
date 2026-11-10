@@ -1,0 +1,200 @@
+[
+ {
+  "code": "CICTO",
+  "alias": "CICTO",
+  "name": "City Information & Communication Technology Office",
+  "isActive": true
+ },
+ {
+  "code": "OCM",
+  "alias": "OCM",
+  "name": "Office of the City Mayor",
+  "isActive": true
+ },
+ {
+  "code": "OCVM",
+  "alias": "OCVM",
+  "name": "Office of the City Vice Mayor",
+  "isActive": true
+ },
+ {
+  "code": "ADM",
+  "alias": "ADM",
+  "name": "Office of the City Administrator",
+  "isActive": true
+ },
+ {
+  "code": "ACA",
+  "alias": "ACA",
+  "name": "Office of the City Accountant",
+  "isActive": true
+ },
+ {
+  "code": "AGR",
+  "alias": "AGR",
+  "name": "Office of the City Agriculture",
+  "isActive": true
+ },
+ {
+  "code": "CBO",
+  "alias": "CBO",
+  "name": "Office of the City Budget Officer",
+  "isActive": true
+ },
+ {
+  "code": "CHO",
+  "alias": "CHO",
+  "name": "Office of the City Health Officer",
+  "isActive": true
+ },
+ {
+  "code": "CLO",
+  "alias": "CLO",
+  "name": "Office of the City Legal Officer",
+  "isActive": true
+ },
+ {
+  "code": "CTO",
+  "alias": "CTO",
+  "name": "Office of the City Treasurer",
+  "isActive": true
+ },
+ {
+  "code": "EAS",
+  "alias": "OCE",
+  "name": "Office of the City Engineering & Architectural Services",
+  "isActive": true
+ },
+ {
+  "code": "CENRO",
+  "alias": "CENRO",
+  "name": "Office of the City Environment & Natural Resources",
+  "isActive": true
+ },
+ {
+  "code": "GSO",
+  "alias": "GSO",
+  "name": "Office of the City General Services Officer",
+  "isActive": true
+ },
+ {
+  "code": "CPIO",
+  "alias": "PIO",
+  "name": "CITY PUBLIC INFORMATION OFFICE",
+  "isActive": true
+ },
+ {
+  "code": "EEM",
+  "alias": "EEM",
+  "name": "Office of the City Market Supervisor",
+  "isActive": true
+ },
+ {
+  "code": "OCA",
+  "alias": "OCA",
+  "name": "Office of the City Assessor",
+  "isActive": true
+ },
+ {
+  "code": "OPS",
+  "alias": "OPS",
+  "name": "Office for Public Safety",
+  "isActive": true
+ },
+ {
+  "code": "OSM",
+  "alias": "OSM",
+  "name": "Office for Strategic Management",
+  "isActive": true
+ },
+ {
+  "code": "OSSP",
+  "alias": "OSSP",
+  "name": "Office of of Secretary to the Sangguanian Panglungsod",
+  "isActive": true
+ },
+ {
+  "code": "PDO",
+  "alias": "PDO",
+  "name": "Office of the City Planning & Development Coordinator",
+  "isActive": true
+ },
+ {
+  "code": "LEBDO",
+  "alias": "LEBDO",
+  "name": "Local Economic Business Development Office",
+  "isActive": true
+ },
+ {
+  "code": "REG",
+  "alias": "REG",
+  "name": "Office of the City Registrar",
+  "isActive": true
+ },
+ {
+  "code": "CSWD",
+  "alias": "CSWD",
+  "name": "Office of the City Social Welfare & Development Officer",
+  "isActive": true
+ },
+ {
+  "code": "VET",
+  "alias": "VET",
+  "name": "Office of the City Veterenary",
+  "isActive": true
+ },
+ {
+  "code": "HRMO",
+  "alias": "HRMO",
+  "name": "Office of the City Human Resources & Management",
+  "isActive": true
+ },
+ {
+  "code": "LIB",
+  "alias": "LIB",
+  "name": "Office of the City Librarian",
+  "isActive": true
+ },
+ {
+  "code": "GAD",
+  "alias": "GAD",
+  "name": "Gender & Development Office",
+  "isActive": true
+ },
+ {
+  "code": "CDRRMO",
+  "alias": "CDRRMO",
+  "name": "City Disaster Risk Reduction Management Office",
+  "isActive": true
+ },
+ {
+  "code": "LYDO",
+  "alias": "LYDO",
+  "name": "Local Youth Development Office",
+  "isActive": true
+ },
+ {
+  "code": "PDAO",
+  "alias": "PDAO",
+  "name": "Person with Disability Affairs Office",
+  "isActive": true
+ },
+ {
+  "code": "PESO",
+  "alias": "PESO",
+  "name": "Public Employment Service Office",
+  "isActive": true
+ },
+ {
+  "code": "CDO",
+  "alias": "CDO",
+  "name": "Cooperative Development Office",
+  "isActive": true
+ },
+ {
+  "code": "BAC",
+  "alias": "BAC",
+  "name": "Bid & Awards Committee",
+  "isActive": true
+ }
+]

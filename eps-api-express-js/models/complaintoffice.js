@@ -97,6 +97,16 @@ module.exports = (sequelize, DataTypes) => { // <--- THIS IS THE REQUIRED FUNCTI
       type: DataTypes.INTEGER,
       allowNull: true
     },
+    // Set when this office handed the feedback over to another office (its row is switched off): when,
+    // and by whom. The office sees the feedback end at that moment.
+    reassignedAt: {
+      type: DataTypes.DATE,
+      allowNull: true
+    },
+    reassignedByUserId: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
   }, {
     sequelize,
     modelName: 'ComplaintOffice',
